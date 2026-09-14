@@ -9,7 +9,8 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 
 BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = 
+
+ADMIN_IDS = [8362874168] 
 
 # 🆔 ID старосты (или чата), куда полетит финальный отчет об отсутствующих
 # По умолчанию отправляем тебе, но сюда можно вписать ID старосты
