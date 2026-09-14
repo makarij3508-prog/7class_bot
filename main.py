@@ -9,9 +9,25 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 
 BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8362874168]  # Твой ID добавлен сюда напрямую!
+ADMIN_IDS = 
 
-# 🗓️ Точный расписание уроков 7 класса
+# 🆔 ID старосты (или чата), куда полетит финальный отчет об отсутствующих
+# По умолчанию отправляем тебе, но сюда можно вписать ID старосты
+STAROSTA_CHAT_ID = 8362874168 
+
+# Хранилище данных в памяти бота
+HOMEWORK_DATA = {}
+IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації."
+BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
+
+# База посещаемости: ID ученика -> True (присутствует) или False (отсутствует)
+ATTENDANCE_DATA = {}
+# Список имен/фамилий текущих отсутствующих для дневного отчета
+ABSENT_TODAY_LIST = []
+
+RANDOM_NAMES = ["Андрій", "Марія", "Олександр", "Дмитро", "Олена", "Максим", "Анна"]
+RANDOM_MODE = "dice" 
+
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
     "tue": "🗓️ **Вівторок:**\n1. Історія\n2. Біологія\n3. Геометрія\n4. Укр. мова\n5. ЗБД\n6. Інформатика\n7. Технології",
@@ -20,9 +36,33 @@ SCHEDULE_DATA = {
     "fri": "🗓️ **П'ятниця:**\n1. Історія\n2. Мистецтво\n3. Англійська\n4. Укр. література\n5. Фізкультура\n6. Біологія\n7. Алгебра"
 }
 
+SUBJECT_NAMES = {
+    "algebra": "📐 Алгебра", "geometry": "📐 Геометрія", "physics": "🧲 Фізика", "chemistry": "🧪 Хімія",
+    "biology": "🧬 Біологія", "geography": "🌍 Географія", "hist_ua": "📜 Історія Укр.", "hist_world": "🏰 Всесвітня iст.",
+    "lang_ua": "🇺🇦 Укр. мова", "lit_ua": "📚 Укр. літ.", "english": "🇬🇧 Англійська", "lit_world": "🗺️ Зарубіжна літ.",
+    "inf": "💻 Інформатика", "tech": "🛠️ Технології", "art": "🎨 Мистецтво", "zbd": "🌱 ЗБД"
+}
+
+DAY_NAMES = {"mon": "Понеділок", "tue": "Вівторок", "wed": "Середа", "thu": "Четвер", "fri": "П'ятниця"}
+
+PREDICTIONS = [
+    "🌟 Сьогодні твій щасливий день! На уроках буде спокійно, а домашку спишеш у друга.",
+    "⚡ Обережно! На наступному уроці фізкультури доведеться багато бігати. Готуй кросівки!",
+    "🧠 Сьогодні твій мозок працює на 200%. Ідеальний час, щоб підняти середній бал з алгебри!",
+    "🍕 У їдальні сьогодні буде щось дуже смачненьке. Не пропусти велику перерву!",
+    "📋 Тебе можуть викликати до дошки, але не панікуй — ШІ помічник у боті завжди під рукою.",
+    "🤫 На вчителя сьогодні найде добрий настрій — самостійної роботи не буде!"
+]
+
 class BotStates(StatesGroup):
     waiting_for_question = State()
     waiting_for_grades = State()
+    waiting_for_hw_text = State()
+    waiting_for_important_text = State()
+    waiting_for_books_text = State()
+    waiting_for_schedule_text = State()
+    waiting_for_names_list = State()
+    waiting_for_absence_info = State()
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -39,21 +79,35 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-subjects_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📐 Алгебра", callback_data="sub_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data="sub_geometry")],
-    [InlineKeyboardButton(text="🧲 Фізика", callback_data="sub_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data="sub_chemistry")],
-    [InlineKeyboardButton(text="🧬 Біологія", callback_data="sub_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data="sub_geography")],
-    [InlineKeyboardButton(text="📜 Історія Укр.", callback_data="sub_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня iст.", callback_data="sub_hist_world")],
-    [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data="sub_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data="sub_lit_ua")],
-    [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data="sub_english"), InlineKeyboardButton(text="🗺️ Зарубіжна літ.", callback_data="sub_lit_world")],
-    [InlineKeyboardButton(text="💻 Інформатика", callback_data="sub_inf"), InlineKeyboardButton(text="🛠️ Технології", callback_data="sub_tech")],
-    [InlineKeyboardButton(text="🎨 Мистецтво", callback_data="sub_art"), InlineKeyboardButton(text="🌱 ЗБД", callback_data="sub_zbd")]
+def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📐 Алгебра", callback_data=f"{prefix}_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data=f"{prefix}_geometry")],
+        [InlineKeyboardButton(text="🧲 Фізика", callback_data=f"{prefix}_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data=f"{prefix}_chemistry")],
+        [InlineKeyboardButton(text="🧬 Біологія", callback_data=f"{prefix}_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data=f"{prefix}_geography")],
+        [InlineKeyboardButton(text="📜 Історія Укр.", callback_data=f"{prefix}_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня iст.", callback_data=f"{prefix}_hist_world")],
+        [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data=f"{prefix}_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data=f"{prefix}_lit_ua")],
+        [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data=f"{prefix}_english"), InlineKeyboardButton(text="🗺️ Зарубіжна літ.", callback_data=f"{prefix}_lit_world")],
+        [InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf"), InlineKeyboardButton(text="🛠️ Технології", callback_data=f"{prefix}_tech")],
+        [InlineKeyboardButton(text="🎨 Мистецтво", callback_data=f"{prefix}_art"), InlineKeyboardButton(text="🌱 ЗБД", callback_data=f"{prefix}_zbd")]
+    ])
+
+def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Понеділок", callback_data=f"{prefix}_mon"), InlineKeyboardButton(text="Вівторок", callback_data=f"{prefix}_tue")],
+        [InlineKeyboardButton(text="Середа", callback_data=f"{prefix}_wed"), InlineKeyboardButton(text="Четвер", callback_data=f"{prefix}_thu")],
+        [InlineKeyboardButton(text="П'ятниця", callback_data=f"{prefix}_fri")]
+    ])
+
+admin_actions_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="📝 Змінити ДЗ", callback_data="admin_add_hw"), InlineKeyboardButton(text="🗓️ Змінити Розклад", callback_data="admin_edit_sch")],
+    [InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")],
+    [InlineKeyboardButton(text="🎲 Налаштувати Рандом", callback_data="admin_config_random")],
+    [InlineKeyboardButton(text="👥 Відмітити відсутнього", callback_data="admin_mark_attendance"), InlineKeyboardButton(text="📢 Надіслати звіт старості", callback_data="admin_send_report")]
 ])
 
-schedule_days_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="Понеділок", callback_data="sch_mon"), InlineKeyboardButton(text="Вівторок", callback_data="sch_tue")],
-    [InlineKeyboardButton(text="Середа", callback_data="sch_wed"), InlineKeyboardButton(text="Четвер", callback_data="sch_thu")],
-    [InlineKeyboardButton(text="П'ятниця", callback_data="sch_fri")]
+settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="🏆 Мої досягнення", callback_data="profile_achievements")],
+    [InlineKeyboardButton(text="🔮 Передбачення на день", callback_data="profile_prediction")]
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
@@ -69,422 +123,49 @@ async def cmd_start(message: Message):
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
-    text = "Обери предмет, щоб подивитися або додати домашнє завдання:"
-    await send_human_message(message, text, reply_markup=subjects_menu)
+    await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
+
+@router.callback_query(F.data.startswith("view_"))
+async def process_view_hw(callback: CallbackQuery):
+    subject = callback.data.split("_")
+    sub_name = SUBJECT_NAMES.get(subject, "Предмет")
+    hw_text = HOMEWORK_DATA.get(subject, "Завдання поки що не додано.")
+    await callback.message.edit_text(text=f"📝 **ДЗ з предмету {sub_name}:**\n\n{hw_text}", reply_markup=get_subjects_menu("view"))
+    await callback.answer()
 
 @router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
-    text = "Обери день тижня, щоб подивитися розклад уроків:"
-    await send_human_message(message, text, reply_markup=schedule_days_menu)
+    await send_human_message(message, "Обери день тижня, щоб подивитися розклад уроків:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
 async def process_schedule_callback(callback: CallbackQuery):
-    day_parts = callback.data.split("_")
-    day = day_parts[1]  # ИСПРАВЛЕНО: берем сам день недели ("mon", "tue" и т.д.)
+    day = callback.data.split("_")
     schedule_text = SCHEDULE_DATA.get(day, "⚠️ Розклад не знайдено.")
-    await callback.message.edit_text(text=schedule_text, reply_markup=schedule_days_menu)
+    await callback.message.edit_text(text=schedule_text, reply_markup=get_days_menu("sch"))
     await callback.answer()
 
 @router.message(F.text == "📚 Книги")
 async def show_books(message: Message):
-    text = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
-    await send_human_message(message, text)
+    await send_human_message(message, BOOKS_DATA)
 
 @router.message(F.text == "📌 Важливе")
 async def show_important(message: Message):
-    text = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від старости чи вчителів."
-    await send_human_message(message, text)
-
-# 🛠️ РАБОЧАЯ АДМИНКА
-@router.message(F.text == "🛠️ Admin Panel")
-async def admin_panel(message: Message):
-    if message.from_user.id not in ADMIN_IDS: return
-    text = "👑 **Вітаю в панелі керування розробника!**\n\nБот працює стабільно на сервері Render. Усі системи функціонують у штатному режимі."
-    await send_human_message(message, text)
-
-# 🎲 НОВАЯ ЛОГИКА ДЛЯ РАНДОМА
-@router.message(F.text == "🎲 Рандом")
-async def cmd_random(message: Message):
-    await message.answer("🎲 Кидаю кубик на удачу...")
-    await bot.send_dice(chat_id=message.chat.id, emoji="🎲")
-
-# ⚙️ НОВАЯ ЛОГИКА ДЛЯ НАСТРОЕК
-@router.message(F.text == "⚙️ Налаштування")
-async def cmd_settings(message: Message):
-    text = (
-        f"⚙️ **Налаштування профілю:**\n\n"
-        f"👤 **Користувач:** {message.from_user.first_name}\n"
-        f"🆔 **Твій ID:** `{message.from_user.id}`\n"
-        f"🎒 **Клас:** 7 клас\n"
-        f"🤖 **Версія бота:** 2.0 (Stable)"
-    )
-    await send_human_message(message, text)
-
-# 📊 НОВАЯ ЛОГИКА ДЛЯ СРЕДНЕГО БАЛЛА
-@router.message(F.text == "📊 Сер. бал")
-async def cmd_average_welcome(message: Message, state: FSMContext):
-    await state.set_state(BotStates.waiting_for_grades)
-    text = "📊 **Калькулятор середнього балу**\n\nНапиши мені свої оцінки через кому (наприклад: `10, 9, 12, 11, 8`), і я порахую твій середній бал!"
-    await send_human_message(message, text)
-
-# Общие текстовые обработчики состояний
-@router.message(BotStates.waiting_for_grades)
-async def process_grades(message: Message, state: FSMContext):
-    if message.text in ["🗓️ Розклад", "📝 ДЗ", "🤖 ШІ Допомога", "📊 Сер. бал", "📚 Книги", "📌 Важливе", "🎲 Рандом", "⚙️ Налаштування"]:
-        await state.clear()
-        if message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-        elif message.text == "🗓️ Розклад": await show_schedule_days(message)
-        return
-
-    try:
-        raw_grades = message.text.replace(" ", "").split(",")
-        grades = [int(g) for g in raw_grades if g.isdigit() and 1 <= int(g) <= 12]
-        
-        if not grades:
-            await message.answer("⚠️ Будь ласка, введи коректні оцінки від 1 до 12 через кому!")
-            return
-            
-        avg = sum(grades) / len(grades)
-        await message.answer(f"📈 Твій середній бал за ці оцінки: **{avg:.2f}**")
-    except Exception:
-        await message.answer("⚠️ Сталася помилка при розрахунку. Перевір, чи правильно введені цифри!")
-
-# 🤖 РЕЖИМ ШІ
-@router.message(F.text == "🤖 ШІ Допомога")
-async def ai_welcome(message: Message, state: FSMContext):
-    await state.set_state(BotStates.waiting_for_question)
-    text = "🤖 Напиши мені своє питання, і я безкоштовно допоможу розібратися!"
-    await send_human_message(message, text)
-
-@router.message(BotStates.waiting_for_question)
-async def ai_answer(message: Message, state: FSMContext):
-    if message.text in ["🗓️ Розклад", "📝 ДЗ", "🤖 ШІ Допомога", "📊 Сер. бал", "📚 Книги", "📌 Важливе", "🎲 Рандом", "⚙️ Налаштування"]:
-        await state.clear()
-        if message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-        elif message.text == "🗓️ Розклад": await show_schedule_days(message)
-        elif message.text == "📚 Книги": await show_books(message)
-        elif message.text == "📌 Важливе": await show_important(message)
-        return
-
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        try:
-            import api_helper
-            ans_text = await api_helper.get_free_ai_response(message.text)
-        except Exception:
-            ans_text = "⚠️ Ой, щось мої нейромережі перевантажені. Спробуй ще раз!"
-    await message.answer(ans_text)
-
-async def main():
-    dp.include_router(router)
-    print("🚀 Бот запущен!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-import asyncio
-import logging
-import random
-from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.utils.chat_action import ChatActionSender
-
-BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8362874168]
-
-class AIState(StatesGroup):
-    waiting_for_question = State()
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-router = Router()
-
-def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
-    buttons = [
-        [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
-        [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="📊 Сер. бал")],
-        [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
-        [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
-    ]
-    if user_id in ADMIN_IDS:
-        buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-
-subjects_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📐 Алгебра", callback_data="sub_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data="sub_geometry")],
-    [InlineKeyboardButton(text="🧲 Фізика", callback_data="sub_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data="sub_chemistry")],
-    [InlineKeyboardButton(text="🧬 Біологія", callback_data="sub_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data="sub_geography")],
-    [InlineKeyboardButton(text="📜 Історія Укр.", callback_data="sub_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня іст.", callback_data="sub_hist_world")],
-    [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data="sub_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data="sub_lit_ua")],
-    [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data="sub_english"), InlineKeyboardButton(text="🗺️ Зарубіжна літ.", callback_data="sub_lit_world")],
-    [InlineKeyboardButton(text="💻 Інформатика", callback_data="sub_inf"), InlineKeyboardButton(text="🛠️ Технології", callback_data="sub_tech")],
-    [InlineKeyboardButton(text="🎨 Мистецтво", callback_data="sub_art"), InlineKeyboardButton(text="🌱 ЗБД", callback_data="sub_zbd")]
-])
-
-async def send_human_message(message: Message, text: str, reply_markup=None):
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
-        await asyncio.sleep(delay)
-    return await message.answer(text, reply_markup=reply_markup)
-
-@router.message(Command("start"))
-async def cmd_start(message: Message):
-    text = "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?"
-    await send_human_message(message, text, reply_markup=get_main_menu(message.from_user.id))
-
-@router.message(F.text == "📝 ДЗ")
-async def show_subjects_for_hw(message: Message):
-    text = "Обери предмет, щоб подивитися або додати домашнє завдання:"
-    await send_human_message(message, text, reply_markup=subjects_menu)
-
-# НОВАЯ ЛОГИКА ДЛЯ КНОПКИ РОЗКЛАД
-@router.message(F.text == "🗓️ Розклад")
-async def show_schedule(message: Message):
-    text = (
-        "🗓️ **Розклад уроків (7 клас):**\n\n"
-        "Поки що розклад не завантажено адміністратором. "
-        "Ти зможеш додати його через адмін-панель трохи пізніше!"
-    )
-    await send_human_message(message, text)
-
-# НОВАЯ ЛОГИКА ДЛЯ КНОПКИ КНИГИ
-@router.message(F.text == "📚 Книги")
-async def show_books(message: Message):
-    text = (
-        "📚 **Електронні підручники для 7 класу:**\n\n"
-        "Тут будуть посилання на завантаження твоїх підручників. "
-        "Ти зможеш додати потрібних авторів у будь-який момент!"
-    )
-    await send_human_message(message, text)
-
-# НОВАЯ ЛОГИКА ДЛЯ КНОПКИ ВАЖЛИВЕ
-@router.message(F.text == "📌 Важливе")
-async def show_important(message: Message):
-    text = (
-        "📌 **Важливі оголошення:**\n\n"
-        "Наразі немає нових оголошень від старости чи вчителів. "
-        "Сюди будуть прилітати головні новини класу!"
-    )
-    await send_human_message(message, text)
+    await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🛠️ Admin Panel")
 async def admin_panel(message: Message):
     if message.from_user.id not in ADMIN_IDS: return
-    text = "👑 Вітаю в панелі керування! Тут ти зможеш оновлювати розклад та ДЗ."
-    await send_human_message(message, text)
+    await send_human_message(message, "👑 **Панель керування адміністратора**\n\nОбери, яку інформацію ти хочеш оновити або сформуй звіт посещаемости:", reply_markup=admin_actions_menu)
 
-@router.message(F.text == "🤖 ШІ Допомога")
-async def ai_welcome(message: Message, state: FSMContext):
-    await state.set_state(AIState.waiting_for_question)
-    text = "🤖 Напиши мені своє питання, і я безкоштовно допоможу розібратися!"
-    await send_human_message(message, text)
+# АДМИНКА ОБРАБОТЧИКИ (ДЗ, Важное, Книги, Расписание, Рандом)
+@router.callback_query(F.data == "admin_add_hw")
+async def admin_choose_subject_hw(callback: CallbackQuery):
+    await callback.message.edit_text(text="📝 Обери предмет, для якого хочеш записати ДЗ:", reply_markup=get_subjects_menu("edit"))
+    await callback.answer()
 
-@router.message(AIState.waiting_for_question)
-async def ai_answer(message: Message, state: FSMContext):
-    if message.text in ["🗓️ Розклад", "📝 ДЗ", "🤖 ШІ Допомога", "📊 Сер. бал", "📚 Книги", "📌 Важливе", "🎲 Рандом", "⚙️ Налаштування"]:
-        await state.clear()
-        if message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-        elif message.text == "🗓️ Розклад": await show_schedule(message)
-        elif message.text == "📚 Книги": await show_books(message)
-        elif message.text == "📌 Важливе": await show_important(message)
-        return
-
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        try:
-            import api_helper
-            ans_text = await api_helper.get_free_ai_response(message.text)
-        except Exception:
-            ans_text = "⚠️ Ой, щось мої нейромережі перевантажені. Спробуй ще раз!"
-    await message.answer(ans_text)
-
-async def main():
-    dp.include_router(router)
-    print("🚀 Бот запущен!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-import asyncio
-import logging
-import random
-from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.utils.chat_action import ChatActionSender
-
-BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8362874168]
-
-class AIState(StatesGroup):
-    waiting_for_question = State()
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-router = Router()
-
-def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
-    buttons = [
-        [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
-        [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="📊 Сер. бал")],
-        [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
-        [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
-    ]
-    if user_id in ADMIN_IDS:
-        buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-
-subjects_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📐 Алгебра", callback_data="sub_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data="sub_geometry")],
-    [InlineKeyboardButton(text="🧲 Фізика", callback_data="sub_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data="sub_chemistry")],
-    [InlineKeyboardButton(text="🧬 Біологія", callback_data="sub_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data="sub_geography")],
-    [InlineKeyboardButton(text="📜 Історія Укр.", callback_data="sub_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня іст.", callback_data="sub_hist_world")],
-    [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data="sub_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data="sub_lit_ua")],
-    [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data="sub_english"), InlineKeyboardButton(text="🗺️ Зарубіжна літ.", callback_data="sub_lit_world")],
-    [InlineKeyboardButton(text="💻 Інформатика", callback_data="sub_inf"), InlineKeyboardButton(text="🛠️ Технології", callback_data="sub_tech")],
-    [InlineKeyboardButton(text="🎨 Мистецтво", callback_data="sub_art"), InlineKeyboardButton(text="🌱 ЗБД", callback_data="sub_zbd")]
-])
-
-async def send_human_message(message: Message, text: str, reply_markup=None):
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
-        await asyncio.sleep(delay)
-    return await message.answer(text, reply_markup=reply_markup)
-
-@router.message(Command("start"))
-async def cmd_start(message: Message):
-    text = "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?"
-    await send_human_message(message, text, reply_markup=get_main_menu(message.from_user.id))
-
-@router.message(F.text == "📝 ДЗ")
-async def show_subjects_for_hw(message: Message):
-    text = "Обери предмет, щоб подивитися або додати домашнє завдання:"
-    await send_human_message(message, text, reply_markup=subjects_menu)
-
-@router.message(F.text == "🛠️ Admin Panel")
-async def admin_panel(message: Message):
-    if message.from_user.id not in ADMIN_IDS: return
-    text = "👑 Вітаю в панелі керування! Тут ти зможеш оновлювати розклад та ДЗ."
-    await send_human_message(message, text)
-
-@router.message(F.text == "🤖 ШІ Допомога")
-async def ai_welcome(message: Message, state: FSMContext):
-    await state.set_state(AIState.waiting_for_question)
-    text = "🤖 Напиши мені своє питання, і я безкоштовно допоможу розібратися!"
-    await send_human_message(message, text)
-
-@router.message(AIState.waiting_for_question)
-async def ai_answer(message: Message, state: FSMContext):
-    if message.text in ["🗓️ Розклад", "📝 ДЗ", "🤖 ШІ Допомога", "📊 Сер. бал", "📚 Книги", "📌 Важливе", "🎲 Рандом", "⚙️ Налаштування"]:
-        await state.clear()
-        if message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-        return
-
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        try:
-            import api_helper
-            ans_text = await api_helper.get_free_ai_response(message.text)
-        except Exception:
-            ans_text = "⚠️ Ой, щось мої нейромережі перевантажені. Спробуй ще раз!"
-    await message.answer(ans_text)
-
-async def main():
-    dp.include_router(router)
-    print("🚀 Бот запущен!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-import asyncio
-import logging
-import random
-from aiogram import Bot, Dispatcher, Router, F
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.utils.chat_action import ChatActionSender
-
-BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8362874168]
-
-class AIState(StatesGroup):
-    waiting_for_question = State()
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-router = Router()
-
-def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
-    buttons = [
-        [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
-        [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="📊 Сер. бал")],
-        [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
-        [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
-    ]
-    if user_id in ADMIN_IDS:
-        buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-
-subjects_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="📐 Алгебра", callback_data="sub_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data="sub_geometry")],
-    [InlineKeyboardButton(text="🧲 Фізика", callback_data="sub_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data="sub_chemistry")],
-    [InlineKeyboardButton(text="🧬 Біологія", callback_data="sub_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data="sub_geography")],
-    [InlineKeyboardButton(text="📜 Історія України", callback_data="sub_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня історія", callback_data="sub_hist_world")],
-    [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data="sub_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ", callback_data="sub_lit_ua")],
-    [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data="sub_english"), InlineKeyboardButton(text="🗺️ Зарубіжна літ", callback_data="sub_lit_world")]
-])
-
-async def send_human_message(message: Message, text: str, reply_markup=None):
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
-        await asyncio.sleep(delay)
-    return await message.answer(text, reply_markup=reply_markup)
-
-@router.message(Command("start"))
-async def cmd_start(message: Message):
-    text = "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?"
-    await send_human_message(message, text, reply_markup=get_main_menu(message.from_user.id))
-
-@router.message(F.text == "📝 ДЗ")
-async def show_subjects_for_hw(message: Message):
-    text = "Обери предмет, щоб подивитися або додати домашнє завдання:"
-    await send_human_message(message, text, reply_markup=subjects_menu)
-
-@router.message(F.text == "🛠️ Admin Panel")
-async def admin_panel(message: Message):
-    if message.from_user.id not in ADMIN_IDS: return
-    text = "👑 Вітаю в панелі керування! Тут ти зможеш оновлювати розклад та ДЗ."
-    await send_human_message(message, text)
-
-@router.message(F.text == "🤖 ШІ Допомога")
-async def ai_welcome(message: Message, state: FSMContext):
-    await state.set_state(AIState.waiting_for_question)
-    text = "🤖 Напиши мені своє питання, і я безкоштовно допоможу розібратися!"
-    await send_human_message(message, text)
-
-@router.message(AIState.waiting_for_question)
-async def ai_answer(message: Message, state: FSMContext):
-    if message.text in ["🗓️ Розклад", "📝 ДЗ", "🤖 ШІ Допомога", "📊 Сер. бал", "📚 Книги", "📌 Важливе", "🎲 Рандом", "⚙️ Налаштування"]:
-        await state.clear()
-        if message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-        return
-
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        try:
-            import api_helper
-            ans_text = await api_helper.get_free_ai_response(message.text)
-        except Exception:
-            ans_text = "⚠️ Ой, щось мої нейромережі перевантажені. Спробуй ще раз!"
-    await message.answer(ans_text)
-
-async def main():
-    dp.include_router(router)
-    print("🚀 Бот запущен!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
+@router.callback_query(F.data.startswith("edit_"))
+async def admin_write_hw_text(callback: CallbackQuery, state: FSMContext):
+    subject = callback.data.split("_")
+    await state.update_data(chosen_subject=subject)
+    await state.set_state(BotStates.waiting_for_hw_text)
+    await callback.message.edit_text(text=f"✍️ Надішліть текст ДЗ для предмету: **{SUBJECT_NAMES.get(subject)}**")
