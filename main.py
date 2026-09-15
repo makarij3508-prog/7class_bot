@@ -261,7 +261,7 @@ async def process_achievements(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
-    await callback.message.answer("📜 **Лог оновлень (v2.2):**\n\n• Додано циклічний режим ШІ з кнопкою виходу\n• Повністю виправлені кнопки укр мова/літ/історія\n• Додано робочий таймер дзвінків")
+    await callback.message.answer("📜 **Лог оновлень (v2.2):**\n\n• Додано Більше імен до режиму Рандом")
     await callback.answer()
 
 # ==========================================
