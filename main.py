@@ -2,7 +2,7 @@ import asyncio
 import logging
 import random
 import os
-from datetime import datetime
+import aiohttp
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
@@ -12,25 +12,15 @@ from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
 BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8791830931]  # ФИКС: Твой новый ID прописан!
-STAROSTA_CHAT_ID = 8791830931  # ФИКС: Отчеты прилетят тебе!
+ADMIN_IDS = [8791830931]  # Твій новий ID
+STAROSTA_CHAT_ID = 8791830931
 
 HOMEWORK_DATA = {}
 IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації."
 BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
 ABSENT_TODAY_LIST = []
-RANDOM_NAMES = ["Андрій", "Марічка", "Олександр", "Дмитро", "Мирослава", "Максим", "Ангеліна", "Роман", "Ілля", "Вероніка", "Емілія", "Софія", "Данило", "Ковальчук", "Колодинський", "Владислав", "Назарій", "Едуард", "Матвій", "Михайло", "Єва", "Альберт", "Нікіта", "Маргарита", "Ілона", "Макар", "Станіслав"]
+RANDOM_NAMES = ["Андрій", "Марія", "Олександр", "Дмитро", "Олена", "Максим", "Анна"]
 RANDOM_MODE = "dice"
-
-LESSON_BELLS = {
-    1: ("08:30", "09:15"),
-    2: ("09:35", "10:20"),
-    3: ("10:40", "11:25"),
-    4: ("11:45", "12:30"),
-    5: ("12:50", "13:35"),
-    6: ("13:45", "14:30"),
-    7: ("14:40", "15:25")
-}
 
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
@@ -70,15 +60,11 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
         [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="📊 Сер. бал")],
         [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
-        [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="🔔 Дзвінки")],
-        [KeyboardButton(text="⚙️ Налаштування")]
+        [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
     ]
     if user_id in ADMIN_IDS:
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-
-def get_ai_mode_menu() -> ReplyKeyboardMarkup:
-    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -147,41 +133,6 @@ async def process_schedule_callback(callback: CallbackQuery):
     await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
     await callback.answer()
 
-@router.message(F.text == "🔔 Дзвінки")
-async def show_bells_and_timer(message: Message):
-    now = datetime.now()
-    current_str = now.strftime("%H:%M")
-    current_time = datetime.strptime(current_str, "%H:%M")
-    
-    status_text = "🏫 **Зараз уроків немає (навчальний день закінчився або ще не почався).**"
-    bells_list = "🔔 **Розклад дзвінків:**\n"
-    for num, (start, end) in LESSON_BELLS.items():
-        bells_list += f"{num}. {start} - {end}\n"
-    
-    in_school_hours = False
-    for num, (start, end) in LESSON_BELLS.items():
-        start_t = datetime.strptime(start, "%H:%M")
-        end_t = datetime.strptime(end, "%H:%M")
-        
-        if start_t <= current_time <= end_t:
-            time_left = int((end_t - current_time).total_seconds() / 60)
-            status_text = f"📚 **Зараз іде {num}-й урок!**\n⏳ До перерви залишилось: **{time_left} хв.**"
-            in_school_hours = True
-            break
-            
-    if not in_school_hours:
-        for num in range(1, len(LESSON_BELLS)):
-            end_current = datetime.strptime(LESSON_BELLS[num][1], "%H:%M")
-            start_next = datetime.strptime(LESSON_BELLS[num+1][0], "%H:%M")
-            
-            if end_current <= current_time <= start_next:
-                time_left = int((start_next - current_time).total_seconds() / 60)
-                status_text = f"🥪 **Зараз перерва після {num}-го уроку!**\n🏃‍♂️ До початку {num+1}-го уроку залишилось: **{time_left} хв.**"
-                break
-
-    full_response = f"{bells_list}\n📊 **Статус зараз:**\n{status_text}"
-    await send_human_message(message, full_response)
-
 @router.message(F.text == "📚 Книги")
 async def show_books(message: Message):
     await send_human_message(message, BOOKS_DATA)
@@ -201,7 +152,7 @@ async def show_random(message: Message):
 
 @router.message(F.text == "📊 Сер. бал")
 async def ask_for_grades(message: Message, state: FSMContext):
-    await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 8, 11, 4, 2):")
+    await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
     await state.set_state(BotStates.waiting_for_grades)
 
 @router.message(BotStates.waiting_for_grades)
@@ -217,32 +168,47 @@ async def process_grades(message: Message, state: FSMContext):
         await send_human_message(message, "❌ Будь ласка, введи коректні оцінки (числа від 1 до 12).")
     await state.clear()
 
+# --- АСИНХРОННИЙ БЕЗКОШТОВНИЙ ШІ ---
+async def ask_free_ai(question: str) -> str:
+    url = "https://pollinations.ai"
+    payload = {
+        "messages": [
+            {"role": "system", "content": "Ти розумний та дружелюбний ШІ помічник для учня 7 класу. Відповідай чітко, коротко, українською мовою. Допомагай вирішувати домашні завдання."},
+            {"role": "user", "content": question}
+        ],
+        "model": "searchgpt",
+        "jsonMode": False
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload, timeout=15) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    return "⚠️ Сервер ШІ тимчасово перевантажений. Спробуй ще раз!"
+    except Exception as e:
+        logging.error(f"AI Error: {e}")
+        return "❌ Не вдалося з'єднатися з ШІ."
+
+# --- РЕЖИМ ОДНОГО ПИТАННЯ ШІ ---
 @router.message(F.text == "🤖 ШІ Допомога")
 async def ai_help(message: Message, state: FSMContext):
-    await send_human_message(
-        message, 
-        "🤖 **Ви увійшли в regime інтелектуального помічника!**\n\n"
-        "Тепер ви можете писати мені будь-які питання один за одним БЕЗ повторного натискання кнопок.\n"
-        "Щоб повернутися до звичайного меню, натисніть кнопку нижче 👇",
-        reply_markup=get_ai_mode_menu()
-    )
+    await send_human_message(message, "🤖 **Напиши своє питання, і я (справжній ШІ) спробую допомогти:**")
     await state.set_state(BotStates.waiting_for_question)
-
-@router.message(BotStates.waiting_for_question, F.text == "🛑 Вийти з режиму ШІ")
-async def exit_ai_mode(message: Message, state: FSMContext):
-    await state.clear()
-    await send_human_message(message, "🚪 Ви вийшли з режиму ШІ. Повертаюсь до головного меню:", reply_markup=get_main_menu(message.from_user.id))
 
 @router.message(BotStates.waiting_for_question)
 async def process_ai_question(message: Message, state: FSMContext):
     if message.text.startswith("/"):
+        await state.clear()
         return
-    await send_human_message(
-        message, 
-        f"🤖 **Відповідь ШІ на питання:** «_{message.text}_»\n\n"
-        f"Порада: Для детального розв'язку переглянь параграф у підручнику. Я готовий до наступного питання!",
-        reply_markup=get_ai_mode_menu()
-    )
+        
+    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
+        ai_response = await ask_free_ai(message.text)
+
+    await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}")
+    await state.clear()  # ФИКС: Сбрасываем состояние сразу после одного ответа!
+
+# --------------------------------
 
 @router.message(F.text == "⚙️ Налаштування")
 async def show_settings(message: Message):
@@ -261,7 +227,7 @@ async def process_achievements(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
-    await callback.message.answer("📜 **Лог оновлень (v2.2):**\n\n• Додано Більше імен до режиму Рандом")
+    await callback.message.answer("📜 **Лог оновлень (v2.1):**\n\n• Інтегровано справжній безкоштовний ШІ\n• Повністю виправлені кнопки предметів укр. мова/літ/історія\n• Покращено стабільність сервера Render")
     await callback.answer()
 
 # ==========================================
