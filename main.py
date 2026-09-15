@@ -3,6 +3,7 @@ import logging
 import random
 import os
 import aiohttp
+from datetime import datetime
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
@@ -65,6 +66,10 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
     if user_id in ADMIN_IDS:
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
+
+# ВОЗВРАЩАЕМ КНОПКУ ВЫХОДА ДЛЯ ШИ КЛАВИАТУРЫ
+def get_ai_mode_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -168,47 +173,62 @@ async def process_grades(message: Message, state: FSMContext):
         await send_human_message(message, "❌ Будь ласка, введи коректні оцінки (числа від 1 до 12).")
     await state.clear()
 
-# --- АСИНХРОННИЙ БЕЗКОШТОВНИЙ ШІ ---
+# --- СТАБИЛЬНЫЙ БЕСПЛАТНЫЙ ШИ БЕЗ ОШИБОК И КЛЮЧЕЙ ---
 async def ask_free_ai(question: str) -> str:
+    # Используем открытый API шлюз text.pollinations.ai, работающий без токенов
     url = "https://pollinations.ai"
     payload = {
         "messages": [
-            {"role": "system", "content": "Ти розумний та дружелюбний ШІ помічник для учня 7 класу. Відповідай чітко, коротко, українською мовою. Допомагай вирішувати домашні завдання."},
+            {"role": "system", "content": "Ти розумний, детальний ШІ помічник для учня 7 класу. Допомагай вирішувати завдання з математики, мови, фізики. Твої відповіді мають бути чіткими, правильними та обов'язково українською мовою."},
             {"role": "user", "content": question}
         ],
-        "model": "searchgpt",
-        "jsonMode": False
+        "private": True
     }
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=15) as response:
+            async with session.post(url, json=payload, timeout=20) as response:
                 if response.status == 200:
-                    return await response.text()
+                    text_reply = await response.text()
+                    if text_reply.strip():
+                        return text_reply
+                    return "⚠️ ШІ повернув порожню відповідь, спробуй перефразувати питання."
                 else:
-                    return "⚠️ Сервер ШІ тимчасово перевантажений. Спробуй ще раз!"
+                    return f"⚠️ Помилка сервера ШІ (Статус: {response.status}). Спробуй ще раз."
     except Exception as e:
-        logging.error(f"AI Error: {e}")
-        return "❌ Не вдалося з'єднатися з ШІ."
+        logging.error(f"AI Connection Error: {e}")
+        return "❌ Не вдалося зв'язатися з сервером ШІ. Спробуй пізніше."
 
-# --- РЕЖИМ ОДНОГО ПИТАННЯ ШІ ---
+# --- ЦИКЛИЧЕСКИЙ РЕЖИМ ШИ С КНОПКОЙ ВЫХОДА ---
 @router.message(F.text == "🤖 ШІ Допомога")
 async def ai_help(message: Message, state: FSMContext):
-    await send_human_message(message, "🤖 **Напиши своє питання, і я (справжній ШІ) спробую допомогти:**")
+    await send_human_message(
+        message, 
+        "🤖 **Ви увійшли в інтерактивний режим ШІ!**\n\n"
+        "Тепер ти можеш писати мені будь-які питання, завдання чи приклади підряд. Я буду відповідати на кожне повідомлення.\n"
+        "Щоб завершити та повернутися в меню, натисни кнопку нижче 👇",
+        reply_markup=get_ai_mode_menu()
+    )
     await state.set_state(BotStates.waiting_for_question)
+
+@router.message(BotStates.waiting_for_question, F.text == "🛑 Вийти з режиму ШІ")
+async def exit_ai_mode(message: Message, state: FSMContext):
+    await state.clear()
+    await send_human_message(message, "🚪 Ви вийшли з режиму ШІ. Повертаюсь до головного меню:", reply_markup=get_main_menu(message.from_user.id))
 
 @router.message(BotStates.waiting_for_question)
 async def process_ai_question(message: Message, state: FSMContext):
     if message.text.startswith("/"):
-        await state.clear()
         return
         
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
         ai_response = await ask_free_ai(message.text)
 
-    await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}")
-    await state.clear()  # ФИКС: Сбрасываем состояние сразу после одного ответа!
+    await message.answer(
+        f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Задавай наступне питання або натисни кнопку виходу!_",
+        reply_markup=get_ai_mode_menu()
+    )
 
-# --------------------------------
+# ----------------------------------------------
 
 @router.message(F.text == "⚙️ Налаштування")
 async def show_settings(message: Message):
@@ -227,7 +247,7 @@ async def process_achievements(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
-    await callback.message.answer("📜 **Лог оновлень (v2.1):**\n\n• Інтегровано справжній безкоштовний ШІ\n• Повністю виправлені кнопки предметів укр. мова/літ/історія\n• Покращено стабільність сервера Render")
+    await callback.message.answer("📜 **Лог оновлень (v2.1):**\n\n• Виправлено циклічний режим ШІ та повернуто кнопку виходу\n• Налаштовано стабільний безкоштовний ШІ-провайдер українською мовою\n• Повністю полагоджені кнопки укр мова/літ/історія")
     await callback.answer()
 
 # ==========================================
