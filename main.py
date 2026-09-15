@@ -24,12 +24,12 @@ RANDOM_MODE = "dice"
 
 LESSON_BELLS = {
     1: ("08:30", "09:15"),
-    2: ("09:25", "10:10"),
-    3: ("10:25", "11:10"),
-    4: ("11:25", "12:10"),
-    5: ("12:25", "13:10"),
-    6: ("13:20", "14:05"),
-    7: ("14:15", "15:00")
+    2: ("09:35", "10:20"),
+    3: ("10:40", "11:25"),
+    4: ("11:45", "12:30"),
+    5: ("12:50", "13:35"),
+    6: ("13:45", "14:30"),
+    7: ("14:40", "15:25")
 }
 
 SCHEDULE_DATA = {
@@ -201,7 +201,7 @@ async def show_random(message: Message):
 
 @router.message(F.text == "📊 Сер. бал")
 async def ask_for_grades(message: Message, state: FSMContext):
-    await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
+    await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 8, 11, 4, 2):")
     await state.set_state(BotStates.waiting_for_grades)
 
 @router.message(BotStates.waiting_for_grades)
@@ -261,7 +261,7 @@ async def process_achievements(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
-    await callback.message.answer("📜 **Лог оновлень (v2.1):**\n\n• Додано циклічний режим ШІ з кнопкою виходу\n• Повністю виправлені кнопки укр мова/літ/історія\n• Додано робочий таймер дзвінків")
+    await callback.message.answer("📜 **Лог оновлень (v2.2):**\n\n• Додано циклічний режим ШІ з кнопкою виходу\n• Повністю виправлені кнопки укр мова/літ/історія\n• Додано робочий таймер дзвінків")
     await callback.answer()
 
 # ==========================================
