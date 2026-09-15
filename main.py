@@ -13,15 +13,23 @@ from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
 BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
-ADMIN_IDS = [8791830931]  # Твій новий ID
+ADMIN_IDS = [8791830931]  # Твій новий ID прописано
 STAROSTA_CHAT_ID = 8791830931
 
 HOMEWORK_DATA = {}
 IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації."
 BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
 ABSENT_TODAY_LIST = []
-RANDOM_NAMES = ["Андрій", "Марія", "Олександр", "Дмитро", "Олена", "Максим", "Анна"]
 RANDOM_MODE = "dice"
+
+# 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (Всього 28 учнів)
+RANDOM_NAMES = [
+    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковальвчук Богдан", 
+    "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
+    "Маргарита", "Ангеліна", "Нікіта", "Альберт", "Єва", "Роман", "Владислав", 
+    "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Максим"
+]
+USER_ACHIEVEMENTS = {name: ["🥇 Перший запуск бота", "🥈 Активний учень 7 класу"] for name in RANDOM_NAMES}
 
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
@@ -38,7 +46,19 @@ SUBJECT_NAMES = {
     "inf": "💻 Інформатика", "tech": "🛠️ Технології", "art": "🎨 Мистецтво", "zbd": "🌱 ЗБД"
 }
 DAY_NAMES = {"mon": "Понеділок", "tue": "Вівторок", "wed": "Середа", "thu": "Четвер", "fri": "П'ятниця"}
-PREDICTIONS = ["🌟 Сьогодні твій щасливий день! Все буде спокійно.", "⚡ Обережно! На фізрі доведеться побігати.", "🧠 Ідеальний час, щоб підняти бал з алгебри!", "🍕 У їдальні сьогодні смачні булочки!"]
+
+PREDICTIONS = [
+    "🌟 Сьогодні твій щасливий день! Все буде спокійно.",
+    "⚡ Обережно! На фізрі доведеться побігати.",
+    "🧠 Ідеальний час, щоб підняти бал з алгебри!",
+    "🍕 У їдальні сьогодні неймовірно смачні булочки, встигни на перерві!",
+    "🎒 Ти забудеш щось важливе вдома, перевір рюкзак просто зараз!",
+    "🍀 На укр. мові тебе сьогодні омине виклик до дошки. Везунчик!",
+    "🤫 Хтось із класу готує для тебе приємний сюрприз або секрет.",
+    "📈 Твій середній бал скоро злетить вгору, продовжуй в тому ж дусі!",
+    "🦉 Сьогодні вчитель фізики буде в дуже доброму гуморі.",
+    "🎨 Чудовий день для творчості, на мистецтві буде легка тема!"
+]
 
 class BotStates(StatesGroup):
     waiting_for_question = State()
@@ -48,6 +68,8 @@ class BotStates(StatesGroup):
     waiting_for_books_text = State()
     waiting_for_schedule_text = State()
     waiting_for_absence_info = State()
+    admin_choosing_user_ach = State()
+    admin_input_achievement = State()
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -67,7 +89,6 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-# ВОЗВРАЩАЕМ КНОПКУ ВЫХОДА ДЛЯ ШИ КЛАВИАТУРЫ
 def get_ai_mode_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
 
@@ -93,7 +114,7 @@ def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
 admin_actions_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📝 Змінити ДЗ", callback_data="admin_add_hw"), InlineKeyboardButton(text="🗓️ Змінити Розклад", callback_data="admin_edit_sch")],
     [InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")],
-    [InlineKeyboardButton(text="🎲 Налаштувати Рандом", callback_data="admin_config_random")],
+    [InlineKeyboardButton(text="🎲 Налаштувати Рандом", callback_data="admin_config_random"), InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")],
     [InlineKeyboardButton(text="👥 Відмітити відсутнього", callback_data="admin_mark_attendance"), InlineKeyboardButton(text="📢 Надіслати звіт старості", callback_data="admin_send_report")]
 ])
 
@@ -107,6 +128,7 @@ async def send_human_message(message: Message, text: str, reply_markup=None):
         delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
         await asyncio.sleep(delay)
     return await message.answer(text, reply_markup=reply_markup)
+
 
 # ==========================================
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
