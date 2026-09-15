@@ -10,29 +10,28 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
+# 🔑 Головні дані: токен і твій ID адміна
 BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
 ADMIN_IDS = [8362874168]
+STAROSTA_CHAT_ID = 8362874168  # ID старости для звітів
 
-# Хранилище данных в памяти бота
+# База даних у пам'яті
 HOMEWORK_DATA = {}
 IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації."
 BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
 ATTENDANCE_DATA = {}
 ABSENT_TODAY_LIST = []
-STAROSTA_CHAT_ID = 8362874168 
-
 RANDOM_NAMES = ["Андрій", "Марія", "Олександр", "Дмитро", "Олена", "Максим", "Анна"]
-RANDOM_MODE = "dice" 
+RANDOM_MODE = "dice"
 
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
     "tue": "🗓️ **Вівторок:**\n1. Історія\n2. Біологія\n3. Геометрія\n4. Укр. мова\n5. ЗБД\n6. Інформатика\n7. Технології",
     "wed": "🗓️ **Середа:**\n1. Укр. мова\n2. Хімія\n3. Зар. література\n4. Фізкультура\n5. Алгебра\n6. Англійська\n7. Географія",
     "thu": "🗓️ **Четвер:**\n1. Англ. / Біологія\n2. Фізика\n3. Мистецтво\n4. Укр. мова\n5. Геометрія\n6. Інформатика\n7. Історія",
-    "fri": "🗓️ **П'ятниця:**\n1. Історія\n2. Мистецтво\n3. Англійська\n4. Укр. література\n5. Фізкультура\n6. Біологія\n7. Алгебра"
+    "fri": "🗓️ **P'ятниця:**\n1. Історія\n2. Мистецтво\n3. Англійська\n4. Укр. література\n5. Фізкультура\n6. Біологія\n7. Алгебра"
 }
 
-# (Остальной текст словарей для экономии места)
 SUBJECT_NAMES = {
     "algebra": "📐 Алгебра", "geometry": "📐 Геометрія", "physics": "🧲 Фізика", "chemistry": "🧪 Хімія",
     "biology": "🧬 Біологія", "geography": "🌍 Географія", "hist_ua": "📜 Історія Укр.", "hist_world": "🏰 Всесвітня iст.",
@@ -40,14 +39,7 @@ SUBJECT_NAMES = {
     "inf": "💻 Інформатика", "tech": "🛠️ Технології", "art": "🎨 Мистецтво", "zbd": "🌱 ЗБД"
 }
 DAY_NAMES = {"mon": "Понеділок", "tue": "Вівторок", "wed": "Середа", "thu": "Четвер", "fri": "П'ятниця"}
-PREDICTIONS = [
-    "🌟 Сьогодні твій щасливий день! На уроках буде спокійно, а домашку спишеш у друга.",
-    "⚡ Обережно! На наступному уроці фізкультури доведеться багато бігати. Готуй кросівки!",
-    "🧠 Сьогодні твій мозок працює на 200%. Ідеальний час, щоб підняти середній бал з алгебри!",
-    "🍕 У їдальні сьогодні буде щось дуже смачненьке. Не пропусти велику перерву!",
-    "📋 Тебе можуть викликати до дошки, але не панікуй — ШІ помічник у боті завжди під рукою.",
-    "🤫 На вчителя сьогодні найде добрий настрій — самостійної роботи не буде!"
-]
+PREDICTIONS = ["🌟 Сьогодні твій щасливий день! Все буде спокійно.", "⚡ Обережно! На фізрі доведеться побігати.", "🧠 Ідеальний час, щоб підняти бал з алгебри!", "🍕 У їдальні сьогодні смачні булочки!"]
 
 class BotStates(StatesGroup):
     waiting_for_question = State()
@@ -63,9 +55,8 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
 
-# Функция-заглушка для Render, которая отвечает веб-серверу
 async def handle_render_hc(request):
-    return web.Response(text="Бот запущен и работает!")
+    return web.Response(text="OK")
 
 def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
     buttons = [
@@ -105,8 +96,8 @@ admin_actions_menu = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🏆 Мої досягнення", callback_data="profile_achievements")],
-    [InlineKeyboardButton(text="🔮 Передбачення на день", callback_data="profile_prediction")]
+    [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
+    [InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
@@ -117,8 +108,7 @@ async def send_human_message(message: Message, text: str, reply_markup=None):
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
-    text = "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?"
-    await send_human_message(message, text, reply_markup=get_main_menu(message.from_user.id))
+    await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(message.from_user.id))
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
@@ -134,31 +124,29 @@ async def process_view_hw(callback: CallbackQuery):
 
 @router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
-    await send_human_message(message, "Обери день тижня, щоб подивитися розклад уроків:", reply_markup=get_days_menu("sch"))
+    await send_human_message(message, "Обери день тижня:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
 async def process_schedule_callback(callback: CallbackQuery):
     day = callback.data.split("_")[1]
-    schedule_text = SCHEDULE_DATA.get(day, "⚠️ Розклад не знайдено.")
-    await callback.message.edit_text(text=schedule_text, reply_markup=get_days_menu("sch"))
+    await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
     await callback.answer()
 
 @router.message(F.text == "📚 Книги")
-async def show_books(message: Message):
-    await send_human_message(message, BOOKS_DATA)
+async def show_books(message: Message): await send_human_message(message, BOOKS_DATA)
 
 @router.message(F.text == "📌 Важливе")
-async def show_important(message: Message):
-    await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
+async def show_important(message: Message): await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🛠️ Admin Panel")
 async def admin_panel(message: Message):
     if message.from_user.id not in ADMIN_IDS: return
-    await send_human_message(message, "👑 **Панель керування адміністратора**\n\nОбери, яку інформацію ти хочеш оновити:", reply_markup=admin_actions_menu)
+    await send_human_message(message, "👑 **Панель керування адміністратора**", reply_markup=admin_actions_menu)
 
+# АДМИНКА
 @router.callback_query(F.data == "admin_add_hw")
 async def admin_choose_subject_hw(callback: CallbackQuery):
-    await callback.message.edit_text(text="📝 Обери предмет, для якого хочеш записати ДЗ:", reply_markup=get_subjects_menu("edit"))
+    await callback.message.edit_text(text="📝 Обери предмет для ДЗ:", reply_markup=get_subjects_menu("edit"))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("edit_"))
@@ -166,7 +154,18 @@ async def admin_write_hw_text(callback: CallbackQuery, state: FSMContext):
     subject = callback.data.split("_")[1]
     await state.update_data(chosen_subject=subject)
     await state.set_state(BotStates.waiting_for_hw_text)
-    await callback.message.edit_text(text=f"✍️ Надішліть текст ДЗ для предмету: **{SUBJECT_NAMES.get(subject)}**")
+    await callback.message.edit_text(text=f"✍️ Надішліть текст ДЗ для: **{SUBJECT_NAMES.get(subject)}**")
     await callback.answer()
 
 @router.message(BotStates.waiting_for_hw_text)
+async def admin_save_hw_text(message: Message, state: FSMContext):
+    user_data = await state.get_data()
+    subject = user_data.get("chosen_subject")
+    HOMEWORK_DATA[subject] = message.text
+    await state.clear()
+    await message.answer(f"✅ ДЗ для **{SUBJECT_NAMES.get(subject)}** оновлено!", reply_markup=get_main_menu(message.from_user.id))
+
+@router.callback_query(F.data == "admin_add_important")
+async def admin_write_important_text(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(BotStates.waiting_for_important_text)
+    
