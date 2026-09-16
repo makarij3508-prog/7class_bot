@@ -15,15 +15,15 @@ from aiohttp import web
 BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
 # 👑 ТВОЙ ID СУПЕР-АДМИНА (МАКАР) — Работает напрямую
-SUPER_ADMIN_IDS = 
+SUPER_ADMIN_IDS = [8791830931]
 
 # 🪪 СИСТЕМА ПРАВ ПО ЮЗЕРНЕЙМАМ (Вписывай ники одноклассников сюда!)
-MODERATOR_USERNAMES = ["@пример_модератора1", "@пример_модератора2"]  # Рівень 2
-ASSISTANT_USERNAMES = ["@пример_ассистента"]                         # Рівень 1
+MODERATOR_USERNAMES = ["@play.funtime.su"]  # Рівень 2
+ASSISTANT_USERNAMES = ["@sanichka_gg"]                         # Рівень 1
 TESTER_USERNAMES = ["@пример_тестировщика"]                           # Тестировщики
 
 # 📢 ЮЗЕРНЕЙМ СТАРОСТЫ (Кому летит отчёт) — Сюда впиши ник старосты
-STAROSTA_USERNAME = "@пример_старосты"
+STAROSTA_USERNAME = "@myveronichkam"
 
 # 📊 Внутренние списки ID (Заполняются ботом автоматически на лету)
 MODERATOR_IDS = []
@@ -32,7 +32,20 @@ TESTER_IDS = []
 STAROSTA_CHAT_ID = 0  # Сюда автоматически запишется ID старосты, когда он нажмет /start
 
 # Словники динамических связок
-USER_TELEGRAM_NAMES = {8791830931: "Макар"}
+USER_TELEGRAM_NAMES = {8791830931: "Макар",
+                       "@llona_x": "Ілона",
+                       "@selarkin": "Роман",
+                       "@play.funtime.su": "Едуард",
+                       "@marri_chk": "Марічка",
+                       "@myveronichkam": "Вероніка",
+                       "@Red_tea21": "Назарій",
+                       "@Mi42a": "Мирослава",
+                       "@sanichka_gg": "Олександр",
+                       "@shadow123446": "Емілія",
+                       "@ezhik_lite": "Артем",
+                       "@Vladore1488": "Колодинський Богдан",
+                       "@Sharik_xd": "Ковальчук Богдан"
+                       
 USER_USERNAMES = {}                        # Связь @username -> ID
 
 # 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
