@@ -12,18 +12,35 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
-# 🚨 ОНОВЛЕНИЙ ЧИСТИЙ ТОКЕН БОТА
 BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
-# 👑 СИСТЕМА РІВНІВ АДМІНІСТРАЦІЇ ТА РОЛЕЙ (ТВІЙ ID ВЖЕ ТУТ)
-SUPER_ADMIN_IDS = [8791830931]  # Рівень 3 (Ти): Повний доступ + керування ролями та тестами
-MODERATOR_IDS = []              # Рівень 2: ДЗ, Розклад, Важливе, Книги, Відмітки, Звіти
-HW_ASSISTANT_IDS = []           # Рівень 1: Тільки зміна Домашнього Завдання
+# 👑 ТВОЙ ID СУПЕР-АДМИНА (МАКАР) — Работает напрямую
+SUPER_ADMIN_IDS = 
 
-TESTER_IDS = []                 # Роль: Тестувальник (прописується руками в коді)
-STAROSTA_CHAT_ID = 8791830931
+# 🪪 СИСТЕМА ПРАВ ПО ЮЗЕРНЕЙМАМ (Вписывай ники одноклассников сюда!)
+MODERATOR_USERNAMES = ["@пример_модератора1", "@пример_модератора2"]  # Рівень 2
+ASSISTANT_USERNAMES = ["@пример_ассистента"]                         # Рівень 1
+TESTER_USERNAMES = ["@пример_тестировщика"]                           # Тестировщики
 
-# 🛠️ ГЛОБАЛЬНИЙ РЕЖИМ ТЕСТУВАННЯ (Технічні роботи)
+# 📢 ЮЗЕРНЕЙМ СТАРОСТЫ (Кому летит отчёт) — Сюда впиши ник старосты
+STAROSTA_USERNAME = "@пример_старосты"
+
+# 📊 Внутренние списки ID (Заполняются ботом автоматически на лету)
+MODERATOR_IDS = []
+HW_ASSISTANT_IDS = []
+TESTER_IDS = []
+STAROSTA_CHAT_ID = 0  # Сюда автоматически запишется ID старосты, когда он нажмет /start
+
+# Словники динамических связок
+USER_TELEGRAM_NAMES = {8791830931: "Макар"}
+USER_USERNAMES = {}                        # Связь @username -> ID
+
+# 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
+CHAT_REGISTERED_USERS = {}  # ID -> ім'я тех, кто в чате
+BANNED_USERS = []           # Чёрный список (ID забаненных)
+MUTED_USERS = {}            # ID -> timestamp окончания мута
+
+# 🛠️ ГЛОБАЛЬНИЙ РЕЖИМ ТЕСТУВАННЯ
 IS_TESTING_MODE = False
 
 HOMEWORK_DATA = {}
@@ -32,7 +49,7 @@ BOOKS_DATA = "📚 **Електронні підручники для 7 клас
 ABSENT_TODAY_LIST = []
 RANDOM_MODE = "dice"
 
-# 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів)
+# 👥 ПОВА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів)
 RANDOM_NAMES = [
     "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
@@ -80,7 +97,8 @@ class BotStates(StatesGroup):
     waiting_for_absence_info = State()
     admin_choosing_user_ach = State()
     admin_input_achievement = State()
-    admin_input_id_for_level = State()
+    admin_input_username_for_level = State()  # Состояние для ввода @username
+    user_in_chat_window = State()
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -92,7 +110,7 @@ async def handle_render_hc(request):
 def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
     buttons = [
         [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
-        [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="📊 Сер. бал")],
+        [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="🔊 Чат класу")],
         [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
         [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
     ]
@@ -102,6 +120,9 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
 
 def get_ai_mode_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
+
+def get_chat_exit_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -143,12 +164,10 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
-# 🚨 ТУТ БІЛЬШЕ НЕМАЄ ДЕКОРАТОРА @router.message() — ВСЕ ОЧИЩЕНО ТА ВИПРАВЛЕНО
 async def send_human_message(message: Message, text: str, reply_markup=None):
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
         delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
         await asyncio.sleep(delay)
-    return await message.answer(text, reply_markup=reply_markup)
 
 # ==========================================
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
@@ -157,11 +176,40 @@ async def send_human_message(message: Message, text: str, reply_markup=None):
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     user_id = message.from_user.id
-    # Чистий запуск для всіх без блокувань та помилок синтаксису
+    username = message.from_user.username
+    
+    # 🪪 АВТО-ПРИВ'ЯЗКА РОЛЕЙ ПО ЮЗЕРНЕЙМАХ ПРИ СТАРТІ БОТА
+    if username:
+        user_key = f"@{username.lower()}"
+        USER_USERNAMES[user_key] = user_id
+        
+        # Перевіряємо роль модератора (Рівень 2)
+        if user_key in MODERATOR_USERNAMES and user_id not in MODERATOR_IDS:
+            MODERATOR_IDS.append(user_id)
+            print(f"✨ Роль Модератора автоматично видана для {user_key}")
+            
+        # Перевіряємо роль помічника по ДЗ (Рівень 1)
+        if user_key in ASSISTANT_USERNAMES and user_id not in HW_ASSISTANT_IDS:
+            HW_ASSISTANT_IDS.append(user_id)
+            print(f"✨ Роль Помічника по ДЗ автоматично видана для {user_key}")
+            
+        # Перевіряємо роль тестувальника
+        if user_key in TESTER_USERNAMES and user_id not in TESTER_IDS:
+            TESTER_IDS.append(user_id)
+            print(f"✨ Роль Teстувальника автоматично видана для {user_key}")
+            
+        # Перевіряємо роль старости
+        if user_key == STAROSTA_USERNAME.lower():
+            global STAROSTA_CHAT_ID
+            STAROSTA_CHAT_ID = user_id
+            print(f"✨ ID Старости класу автоматично прив'язано до {user_key}")
+
     await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
 
 @router.callback_query(F.data.startswith("view_"))
@@ -175,6 +223,8 @@ async def process_view_hw(callback: CallbackQuery):
 
 @router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери день тижня:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
@@ -186,23 +236,30 @@ async def process_schedule_callback(callback: CallbackQuery):
 
 @router.message(F.text == "📚 Книги")
 async def handle_show_books(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, BOOKS_DATA)
 
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🎲 Рандом")
 async def handle_show_random(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     global RANDOM_MODE
-    if RANDOM_MODE == "dice": 
-        await message.answer_dice()
+    if RANDOM_MODE == "dice": await message.answer_dice()
     else:
         name = random.choice(RANDOM_NAMES)
         await send_human_message(message, f"🎲 Випадковий учень до дошки: **{name}**")
 
 @router.message(F.text == "📊 Сер. бал")
 async def ask_for_grades(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
     await state.set_state(BotStates.waiting_for_grades)
 
@@ -235,6 +292,8 @@ async def ask_free_ai(question: str) -> str:
 
 @router.message(F.text == "🤖 ШІ Допомога")
 async def handle_ai_help(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "🤖 **Ви увійшли в інтерактивний режим ШІ!**\n\nПиши свої питання підряд. Для виходу натисни кнопку нижче 👇", reply_markup=get_ai_mode_menu())
     await state.set_state(BotStates.waiting_for_question)
 
@@ -250,8 +309,91 @@ async def process_ai_question(message: Message, state: FSMContext):
         ai_response = await ask_free_ai(message.text)
     await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Пиши наступне запитання!_", reply_markup=get_ai_mode_menu())
 
+# ==========================================
+# 🔊 МОДЕРОВАНИЙ ЧАТ КЛАСУ (МУТ / БАН)
+# ==========================================
+
+@router.message(F.text == "🔊 Чат класу")
+async def enter_chat_room(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    
+    # Глобальна перевірка на бан
+    if user_id in BANNED_USERS:
+        await message.answer("🛑 **Доступ заблоковано!**\n\nВи забанені в чаті адміністрацією класу за порушення правил.")
+        return
+
+    # Перевірка на тех. роботи для чату
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
+        await message.answer("🛠️ Чат закритий на технічні роботи.")
+        return
+
+    if user_id in USER_TELEGRAM_NAMES: name = USER_TELEGRAM_NAMES[user_id]
+    else: name = message.from_user.first_name if message.from_user.first_name else "Учень"
+
+    CHAT_REGISTERED_USERS[user_id] = name
+    await state.set_state(BotStates.user_in_chat_window)
+    
+    await message.answer(
+        f"💬 **Ласкаво просимо до чату класу, {name}!**\n\n"
+        "✍️ Просто пиши повідомлення сюди, і його побачать усі однокласники в чаті бота!",
+        reply_markup=get_chat_exit_menu()
+    )
+
+@router.message(BotStates.user_in_chat_window, F.text == "🚪 Вийти з чату")
+async def exit_chat_room(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if user_id in CHAT_REGISTERED_USERS: CHAT_REGISTERED_USERS.pop(user_id)
+    await state.clear()
+    await send_human_message(message, "🚪 Ви вийшли з кімнати чату. Повертаюсь до меню:", reply_markup=get_main_menu(user_id))
+
+@router.message(BotStates.user_in_chat_window)
+async def process_live_chat_message(message: Message):
+    user_id = message.from_user.id
+    if message.text == "🚪 Вийти з чату": return
+
+    if user_id in BANNED_USERS:
+        await message.answer("🛑 Вас забанено.")
+        return
+
+    # Перевірка на Мут
+    if user_id in MUTED_USERS:
+        now = datetime.now().timestamp()
+        if now < MUTED_USERS[user_id]:
+            time_left = int((MUTED_USERS[user_id] - now) / 60)
+            await message.answer(f"🤫 **У вас діє режим тиші (МУТ)!**\n\nВи зможете писати знову через **{time_left if time_left > 0 else 1} хв.**")
+            return
+        else:
+            MUTED_USERS.pop(user_id)
+
+    sender_name = CHAT_REGISTERED_USERS.get(user_id, "Учень")
+
+    # Розсилаємо всім учасникам у чаті
+    for target_id in list(CHAT_REGISTERED_USERS.keys()):
+        if target_id != user_id:
+            try: await bot.send_message(chat_id=target_id, text=f"💬 **[{sender_name}]:** {message.text}")
+            except Exception: pass
+
+    # Лог чату для ВСІХ АДМІНІВ з інлайн-кнопками покарання
+    all_admins = set(SUPER_ADMIN_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    punish_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🤫 Мут (15 хв)", callback_data=f"mute_15_{user_id}_{sender_name}"),
+         InlineKeyboardButton(text="🛑 БАН у чаті", callback_data=f"ban_{user_id}_{sender_name}")]
+    ])
+
+    for admin_id in all_admins:
+        try:
+            await bot.send_message(
+                chat_id=admin_id,
+                text=f"👁️ **[ЧАТЛОГ] {sender_name} (ID: `{user_id}`) написав:**\n«_{message.text}_»",
+                reply_markup=punish_keyboard
+            )
+        except Exception: pass
+
+# ==========================================
+
 @router.message(F.text == "⚙️ Налаштування")
 async def show_settings(message: Message):
+    user_id = message.from_user.id
     await send_human_message(message, "⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
 @router.callback_query(F.data == "profile_prediction")
@@ -262,7 +404,10 @@ async def process_prediction(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_achievements")
 async def process_achievements(callback: CallbackQuery):
-    name = RANDOM_NAMES[callback.from_user.id % len(RANDOM_NAMES)]
+    user_id = callback.from_user.id
+    if user_id in USER_TELEGRAM_NAMES: name = USER_TELEGRAM_NAMES[user_id]
+    else: name = RANDOM_NAMES[user_id % len(RANDOM_NAMES)]
+        
     ach_list = USER_ACHIEVEMENTS.get(name, ["Поки що немає досягнень"])
     formatted = "\n".join(ach_list)
     await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n{formatted}")
@@ -272,20 +417,14 @@ async def process_achievements(callback: CallbackQuery):
 async def process_changelog(callback: CallbackQuery):
     await callback.message.answer(
         "📜 **Офіційний лог оновлень (v2.0):**\n\n"
-        "• **Нова архітектура:** Бот повністю переписаний на сучасний клас `aiogram 3.x`.\n"
-        "• **Інтеграція ШІ:** Додано безкоштовний штучний інтелект, який працює без ключів та реєстрацій.\n"
-        "• **Ієрархія прав:** Налаштовано 3 рівні адмінки (Помічник по ДЗ, Модератор та Супер-Адмін).\n"
-        "• **Керування доступами:** Реалізовано призначення адмінів 1 і 2 рівня прямо через інлайн-кнопки в боті.\n"
-        "• **Режим тестування:** Додано допомогою глобальний перемикач тех. робіт, який закриває бот для звичайних учнів.\n"
-        "• **База даних класу:** Внесено повний список із 28 учнів з індивідуальними досягненнями.\n"
-        "• **Система звітів:** Додано щоденні відмітки відсутніх та автоматичне відправлення звітів старості.\n"
-        "• **Робота 24/7:** Інтегровано веб-сервер `aiohttp` та систему фонового автопінгу від сну на Render."
+        "• **Повна прив'язка по Юзернеймах:** І модератори, і учні, і староста з тестувальниками додаються через @username. Більше ніяких ID!\n"
+        "• **Модерований Чат класу:** Інтегровано мут на 15 хв та бан з автоматичними повідомленнями в чат.\n"
+        "• **Робота 24/7:** Інтегровано систему фонового автопінгу від сну на Render."
     )
     await callback.answer()
 
 @router.message(F.text == "🛠️ Admin Panel")
-async def handle_admin_panel(message: Message):
-    await admin_panel(message)
+async def handle_admin_panel(message: Message): await admin_panel(message)
 
 # ==========================================
 # 🛠️ АДМІНІСТРАТИВНА ПАНЕЛЬ ТА КЕРУВАННЯ
@@ -298,6 +437,37 @@ async def admin_panel(message: Message):
     else:
         await send_human_message(message, "🛑 У вас немає доступу до цієї команди.")
 
+# 🚨 АДМІН-КНОПКИ: ОБРОБКА МУТУ ТА БАНУ З ЧАТЛОГІВ
+@router.callback_query(F.data.startswith("mute_15_") | F.data.startswith("ban_"))
+async def process_chat_punishment(callback: CallbackQuery):
+    admin_id = callback.from_user.id
+    all_admins = set(SUPER_ADMIN_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    if admin_id not in all_admins: return
+
+    data_parts = callback.data.split("_")
+    action = data_parts[0]
+    
+    if action == "mute":
+        target_id = int(data_parts[2])
+        target_name = data_parts[3]
+        # Вішаємо мут на 15 хвилин від поточного часу
+        MUTED_USERS[target_id] = datetime.now().timestamp() + 900
+        alert_text = f"🤫 **Користувач {target_name} замучений на 15 хв за порушення правил чату!**"
+    else:
+        target_id = int(data_parts[1])
+        target_name = data_parts[2]
+        if target_id not in BANNED_USERS: BANNED_USERS.append(target_id)
+        alert_text = f"🛑 **Користувач {target_name} назавжди забанений у чаті класу!**"
+
+    # Автоматично надсилаємо системне повідомлення в загальну кімнату чату класу
+    for user_id in list(CHAT_REGISTERED_USERS.keys()):
+        try: await bot.send_message(chat_id=user_id, text=alert_text)
+        except Exception: pass
+
+    await callback.message.edit_text(text=f"✅ Покорання успішно застосовано!\n{alert_text}")
+    await callback.answer()
+
+# 👑 СУПЕР-АДМІН: ПРИЗНАЧЕННЯ НОВОГО АДМІНА ПО ЮЗЕРНЕЙМУ
 @router.callback_query(F.data == "admin_give_level_menu")
 async def admin_start_give_level(callback: CallbackQuery):
     if callback.from_user.id not in SUPER_ADMIN_IDS: return
@@ -322,28 +492,39 @@ async def admin_input_id_for_level(callback: CallbackQuery, state: FSMContext):
     data_parts = callback.data.split("_", maxsplit=1)
     level = int(data_parts[1]) if len(data_parts) > 1 else 1
     await state.update_data(chosen_level=level)
-    await callback.message.answer("⚙️ Тепер, будь ласка, **введіть числовий Telegram ID** цього учня:")
-    await state.set_state(BotStates.admin_input_id_for_level)
+    await callback.message.answer("⚙️ Тепер, будь ласка, **введіть юзернейм цього учня** (наприклад: `@andrey`):")
+    await state.set_state(BotStates.admin_input_username_for_level)
     await callback.answer()
 
-@router.message(BotStates.admin_input_id_for_level)
-async def admin_save_level_and_id(message: Message, state: FSMContext):
+@router.message(BotStates.admin_input_username_for_level)
+async def admin_save_level_by_username(message: Message, state: FSMContext):
     if message.from_user.id not in SUPER_ADMIN_IDS: return
-    if not message.text.isdigit():
-        await message.answer("❌ ID має складатися тільки з цифр. Спробуйте ще раз:")
-        return
-    target_id = int(message.text)
+    
+    target_username = message.text.strip().lower()
+    if not target_username.startswith("@"): target_username = f"@{target_username}"
+    
     data = await state.get_data()
     name = data.get("chosen_admin_name")
     level = data.get("chosen_level")
     
+    # Записуємо ник у глобальні списки Части 1
     if level == 1:
-        if target_id not in HW_ASSISTANT_IDS: HW_ASSISTANT_IDS.append(target_id)
+        if target_username not in ASSISTANT_USERNAMES: ASSISTANT_USERNAMES.append(target_username)
         role_text = "📐 Рівень 1 (Помічник по ДЗ)"
     elif level == 2:
-        if target_id not in MODERATOR_IDS: MODERATOR_IDS.append(target_id)
+        if target_username not in MODERATOR_USERNAMES: MODERATOR_USERNAMES.append(target_username)
         role_text = "⭐ Рівень 2 (Модератор / Староста)"
-    await message.answer(f"✅ Учня **{name}** успішно призначено на посаду:\n**{role_text}**")
+
+    # Якщо учень вже запускав бота і його ID є в базі, прилетить миттєвий апгрейд
+    target_id = USER_USERNAMES.get(target_username)
+    if target_id:
+        if level == 1 and target_id not in HW_ASSISTANT_IDS: HW_ASSISTANT_IDS.append(target_id)
+        if level == 2 and target_id not in MODERATOR_IDS: MODERATOR_IDS.append(target_id)
+        status = "(Користувача розпізнано, права активовано!)"
+    else:
+        status = "(Користувач ще не запускав бота, права активуються автоматично при його першому старті!)"
+        
+    await message.answer(f"✅ Учня **{name}** успішно внесено до списків ролей!\n\n**Посада:** {role_text}\n**Юзернейм:** `{target_username}`\n⚙️ {status}")
     await state.clear()
 
 @router.callback_query(F.data == "admin_toggle_test")
@@ -504,6 +685,10 @@ async def admin_save_attendance(message: Message, state: FSMContext):
 @router.callback_query(F.data == "admin_send_report")
 async def admin_send_report_to_starosta(callback: CallbackQuery):
     if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    if not STAROSTA_CHAT_ID:
+        await callback.message.answer("⚠️ Староста ще не запустив бота, його ID не знайдено!")
+        await callback.answer()
+        return
     if not ABSENT_TODAY_LIST:
         await callback.message.answer("⚠️ Список відсутніх порожній!")
         await callback.answer()
@@ -513,7 +698,7 @@ async def admin_send_report_to_starosta(callback: CallbackQuery):
     try:
         await bot.send_message(chat_id=STAROSTA_CHAT_ID, text=report_text)
         await callback.message.answer("🚀 Звіт надіслано старості!")
-    except Exception: await callback.message.answer(f"❌ Помилка відправки! Перевірте ID старости.")
+    except Exception: await callback.message.answer(f"❌ Помилка відправки! Перевірте статус старости.")
     await callback.answer()
 
 # ==========================================
@@ -556,7 +741,7 @@ async def main():
 
     print(" Bot polling started...")
     
-    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА (СБРОС СЕССИЙ С ЗАДЕРЖКОЙ В 10 СЕКУНД)
+    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         print("⏳ Очищення сесій... Чекаємо 10 секунд для скидання конфлікту токена...")
