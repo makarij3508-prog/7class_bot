@@ -152,16 +152,13 @@ async def send_human_message(message: Message, text: str, reply_markup=None):
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
 # ==========================================
 
-# ГЛОБАЛЬНА ПЕРЕВІРКА НА РЕЖИМ ТЕСТУВАННЯ (Технічні роботи)
 @router.message()
 async def check_testing_mode_message(message: Message):
     user_id = message.from_user.id
-    # Якщо режим тесту увімкнено, а користувач НЕ адмін і НЕ тестер — блокуємо
     if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
         await message.answer("🛠️ **Ведуться технічні роботи!**\n\nНаразі бот закритий для оновлення. Будь ласка, завітайте пізніше. Дякуємо за розуміння! 😉")
         return
     
-    # Пропускаємо далі, якщо все ок
     if message.text == "🗓️ Розклад": await show_schedule_days(message)
     elif message.text == "📝 ДЗ": await show_subjects_for_hw(message)
     elif message.text == "🤖 ШІ Допомога": await ai_help(message, dp.current_state(bot=bot, chat=message.chat.id, user=user_id))
@@ -183,7 +180,7 @@ async def check_testing_mode_callback(callback: CallbackQuery):
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
-        await message.answer("🛠️ Ведуться технічні роботи! Бот тимчасово недоступний.")
+        await message.answer("🛠️ Ведуться технічні роботи!")
         return
     await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
 
@@ -192,7 +189,8 @@ async def show_subjects_for_hw(message: Message):
 
 @router.callback_query(F.data.startswith("view_"))
 async def process_view_hw(callback: CallbackQuery):
-    subject = callback.data.split("_", maxsplit=1)[1]
+    data_parts = callback.data.split("_", maxsplit=1)
+    subject = data_parts[1] if len(data_parts) > 1 else ""
     sub_name = SUBJECT_NAMES.get(subject, "Предмет")
     hw_text = HOMEWORK_DATA.get(subject, "Завдання поки що не додано.")
     await callback.message.edit_text(text=f"📝 **ДЗ з предмету {sub_name}:**\n\n{hw_text}", reply_markup=get_subjects_menu("view"))
@@ -203,7 +201,8 @@ async def show_schedule_days(message: Message):
 
 @router.callback_query(F.data.startswith("sch_"))
 async def process_schedule_callback(callback: CallbackQuery):
-    day = callback.data.split("_", maxsplit=1)[1]
+    data_parts = callback.data.split("_", maxsplit=1)
+    day = data_parts[1] if len(data_parts) > 1 else ""
     await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
     await callback.answer()
 
@@ -287,7 +286,7 @@ async def process_changelog(callback: CallbackQuery):
         "• **Нова архітектура:** Бот повністю переписаний на сучасний клас `aiogram 3.x`.\n"
         "• **Інтеграція ШІ:** Додано безкоштовний штучний інтелект, який працює без ключів та реєстрацій.\n"
         "• **Ієрархія прав:** Налаштовано 3 рівні адмінки (Помічник по ДЗ, Модератор та Супер-Адмін).\n"
-        "• **Керування доступами:** Реалізовано призначення адмінів 1 і 2 рівня прямо через інлайн-кнопки в боті.\n"
+        "• **Керування доступами:** Реалізовано призначення адмінів 1 і 2飛рівня прямо через інлайн-кнопки в боті.\n"
         "• **Режим тестування:** Додано глобальний перемикач тех. робіт, який закриває бот для звичайних учнів.\n"
         "• **База даних класу:** Внесено повний список із 28 учнів з індивідуальними досягненнями.\n"
         "• **Система звітів:** Додано щоденні відмітки відсутніх та автоматичне відправлення звітів старості.\n"
@@ -315,7 +314,8 @@ async def admin_start_give_level(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("giveadm_"))
 async def admin_chosen_user_for_level(callback: CallbackQuery, state: FSMContext):
-    name = callback.data.split("_", maxsplit=1)[1]
+    data_parts = callback.data.split("_", maxsplit=1)
+    name = data_parts[1] if len(data_parts) > 1 else "Учень"
     await state.update_data(chosen_admin_name=name)
     level_menu = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📐 Рівень 1 (Помічник по ДЗ)", callback_data="setlevel_1")],
@@ -326,7 +326,8 @@ async def admin_chosen_user_for_level(callback: CallbackQuery, state: FSMContext
 
 @router.callback_query(F.data.startswith("setlevel_"))
 async def admin_input_id_for_level(callback: CallbackQuery, state: FSMContext):
-    level = int(callback.data.split("_")[1])
+    data_parts = callback.data.split("_", maxsplit=1)
+    level = int(data_parts[1]) if len(data_parts) > 1 else 1
     await state.update_data(chosen_level=level)
     await callback.message.answer("⚙️ Тепер, будь ласка, **введіть числовий Telegram ID** цього учня:")
     await state.set_state(BotStates.admin_input_id_for_level)
@@ -370,7 +371,8 @@ async def admin_start_manage_ach(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("achuser_"))
 async def admin_chosen_user_for_ach(callback: CallbackQuery, state: FSMContext):
-    name = callback.data.split("_", maxsplit=1)[1]
+    data_parts = callback.data.split("_", maxsplit=1)
+    name = data_parts[1] if len(data_parts) > 1 else "Учень"
     await state.update_data(target_student=name)
     await callback.message.answer(f"✍️ Введіть текст нового досягнення для учня **{name}**:")
     await state.set_state(BotStates.admin_input_achievement)
@@ -394,7 +396,8 @@ async def admin_choose_subject_hw(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("edit_hw_"))
 async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
-    subject = callback.data.split("_", maxsplit=2)[2]
+    data_parts = callback.data.split("_", maxsplit=2)
+    subject = data_parts[2] if len(data_parts) > 2 else ""
     await state.update_data(chosen_subject=subject)
     await callback.message.answer(f"Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
     await state.set_state(BotStates.waiting_for_hw_text)
@@ -418,7 +421,8 @@ async def admin_choose_day_sch(callback: CallbackQuery):
 
 @router.callback_query(F.data.startswith("edit_sch_"))
 async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
-    day = callback.data.split("_", maxsplit=2)[2]
+    data_parts = callback.data.split("_", maxsplit=2)
+    day = data_parts[2] if len(data_parts) > 2 else ""
     await state.update_data(chosen_day=day)
     await callback.message.answer(f"Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
     await state.set_state(BotStates.waiting_for_schedule_text)
@@ -478,7 +482,8 @@ async def admin_config_random_mode(callback: CallbackQuery):
 async def admin_set_random_mode(callback: CallbackQuery):
     global RANDOM_MODE
     if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
-    mode = callback.data.split("_", maxsplit=2)[2]
+    data_parts = callback.data.split("_", maxsplit=2)
+    mode = data_parts[2] if len(data_parts) > 2 else "dice"
     RANDOM_MODE = mode
     mode_text = "Кубик (Dice)" if mode == "dice" else "Вибір учня зі списку"
     await callback.message.answer(f"✅ Режим рандому змінено на: **{mode_text}**")
@@ -537,42 +542,36 @@ async def self_ping_task():
         await asyncio.sleep(600)
 
 # ==========================================
-# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER (ФІКС ЗАВИСАННЯ)
+# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
 # ==========================================
 async def main():
-    # Налаштовуємо логування, щоб бачити помилки в панелі Render
     logging.basicConfig(level=logging.INFO)
-    
-    # Обов'язково реєструємо роутер у диспетчері!
     dp.include_router(router)
     
-    # Ініціалізуємо веб-додаток aiohttp
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
     app.router.add_get("/webhook", handle_render_hc)
     
-    # Налаштовуємоrunner для веб-сервера
     port = int(os.getenv("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"🌍 Web-server started on port {port}")
+    print(f" Web-server started on port {port}")
 
-    # Запускаємо фонову задачу автопінгу проти сну серверов
     asyncio.create_task(self_ping_task())
 
-    print("🤖 Bot polling starting...")
+    print(" Bot polling started...")
     
-    # ФІКС: Перед запуском полінгу видаляємо старі вебхуки, щоб Telegram знав, що ми працюємо через Polling
-    await bot.delete_webhook(drop_pending_updates=True)
-    
+    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА (ОЧИСТКА ЗАВИСШИХ СЕССИЙ ТЕЛЕГРАМ)
     try:
-        # Запускаємо полінг
-        await dp.start_polling(bot)
-    finally:
-        await bot.session.close()
+        await bot.delete_webhook(drop_pending_updates=True)
+        await asyncio.sleep(2)
+    except Exception as e:
+        print(f"Пропуск очищення сесії: {e}")
+
+    try: await dp.start_polling(bot)
+    finally: await bot.session.close()
 
 if __name__ == "__main__":
-    # Альтернативний чистий запуск без конфліктів Event Loop
     asyncio.run(main())
