@@ -12,10 +12,10 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
-BOT_TOKEN = "8706179100:AAFC3NJTy0xi89EabaPOMlyJwjcxiibyZOE"
+BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
 # 👑 СИСТЕМА РІВНІВ АДМІНІСТРАЦІЇ ТА РОЛЕЙ
-SUPER_ADMIN_IDS = [8791830931]  # Рівень 3 (Ти): Повний доступ + керування ролями та тестами
+SUPER_ADMIN_IDS = [8791830931] # Рівень 3 (Ти): Повний доступ + керування ролями та тестами
 MODERATOR_IDS = []              # Рівень 2: ДЗ, Розклад, Важливе, Книги, Відмітки, Звіти
 HW_ASSISTANT_IDS = []           # Рівень 1: Тільки зміна Домашнього Завдання
 
