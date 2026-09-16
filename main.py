@@ -543,7 +543,7 @@ async def self_ping_task():
         await asyncio.sleep(600)
 
 # ==========================================
-# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
+# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER (ЖОРСТКИЙ ФІКС)
 # ==========================================
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -564,15 +564,18 @@ async def main():
 
     print(" Bot polling started...")
     
-    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА (ОЧИСТКА ЗАВИСШИХ СЕССИЙ ТЕЛЕГРАМ)
+    # 🚨 ЖОРСТКИЙ ФІКС КОНФЛІКТУ: Скидаємо вебхук та чекаємо 10 секунд, щоб Telegram вбив старі сесії
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        await asyncio.sleep(2)
+        print("⏳ Очищення сесій... Чекаємо 10 секунд для скидання конфлікту токена...")
+        await asyncio.sleep(10)
     except Exception as e:
         print(f"Пропуск очищення сесії: {e}")
 
-    try: await dp.start_polling(bot)
-    finally: await bot.session.close()
+    try: 
+        await dp.start_polling(bot)
+    finally: 
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
