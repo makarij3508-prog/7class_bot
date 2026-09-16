@@ -32,21 +32,23 @@ TESTER_IDS = []
 STAROSTA_CHAT_ID = 0  # Сюда автоматически запишется ID старосты, когда он нажмет /start
 
 # Словники динамических связок
-USER_TELEGRAM_NAMES = {8791830931: "Макар",
-                       "@llona_x": "Ілона",
-                       "@selarkin": "Роман",
-                       "@play.funtime.su": "Едуард",
-                       "@marri_chk": "Марічка",
-                       "@myveronichkam": "Вероніка",
-                       "@Red_tea21": "Назарій",
-                       "@Mi42a": "Мирослава",
-                       "@sanichka_gg": "Олександр",
-                       "@shadow123446": "Емілія",
-                       "@ezhik_lite": "Артем",
-                       "@Vladore1488": "Колодинський Богдан",
-                       "@Sharik_xd": "Ковальчук Богдан"
-                      }
-USER_USERNAMES = {}                        # Связь @username -> ID
+USER_TELEGRAM_NAMES = {
+    "8791830931": "Макар",
+    "@llona_x": "Ілона",
+    "@selarkin": "Роман",
+    "@play.funtime.su": "Едуард",
+    "@marri_chk": "Марічка",
+    "@myveronichkam": "Вероніка",
+    "@Red_tea21": "Назарій",
+    "@Mi42a": "Мирослава",
+    "@sanichka_gg": "Олександр",
+    "@shadow123446": "Емілія",
+    "@ezhik_lite": "Артем",
+    "@Vladore1488": "Колодинський Богдан",
+    "@Sharik_xd": "Ковальчук Богдан"
+}
+
+USER_USERNAMES = {}  # Цей рядок лишаємо повністю порожнім
 
 # 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
 CHAT_REGISTERED_USERS = {}  # ID -> ім'я тех, кто в чате
@@ -178,9 +180,9 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
-    async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
-        await asyncio.sleep(delay)
+    # Мгновенная отправка без симуляции печати и зависаний!
+    return await message.answer(text, reply_markup=reply_markup)
+
 
 # ==========================================
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
