@@ -142,6 +142,7 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
+# ДОЛЖНО БЫТЬ ВОТ ТАК (Просто чистая функция без декоратора сверху!):
 async def send_human_message(message: Message, text: str, reply_markup=None):
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
         delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
