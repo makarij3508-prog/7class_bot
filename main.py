@@ -180,10 +180,9 @@ async def check_testing_mode_callback(callback: CallbackQuery):
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
-        await message.answer("🛠️ Ведуться технічні роботи!")
-        return
+    # Чистый запуск без проверок тех. работ, чтобы бот точно выдал меню
     await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
+
 
 async def show_subjects_for_hw(message: Message):
     await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
