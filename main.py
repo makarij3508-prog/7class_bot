@@ -12,10 +12,11 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
+# 🚨 ОНОВЛЕНИЙ ЧИСТИЙ ТОКЕН БОТА
 BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
-# 👑 СИСТЕМА РІВНІВ АДМІНІСТРАЦІЇ ТА РОЛЕЙ
-SUPER_ADMIN_IDS = [8791830931] # Рівень 3 (Ти): Повний доступ + керування ролями та тестами
+# 👑 СИСТЕМА РІВНІВ АДМІНІСТРАЦІЇ ТА РОЛЕЙ (ТВІЙ ID ВЖЕ ТУТ)
+SUPER_ADMIN_IDS = [8791830931]  # Рівень 3 (Ти): Повний доступ + керування ролями та тестами
 MODERATOR_IDS = []              # Рівень 2: ДЗ, Розклад, Важливе, Книги, Відмітки, Звіти
 HW_ASSISTANT_IDS = []           # Рівень 1: Тільки зміна Домашнього Завдання
 
@@ -31,7 +32,7 @@ BOOKS_DATA = "📚 **Електронні підручники для 7 клас
 ABSENT_TODAY_LIST = []
 RANDOM_MODE = "dice"
 
-# 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів, разом з Максом!)
+# 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів)
 RANDOM_NAMES = [
     "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
@@ -142,7 +143,7 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
-# ДОЛЖНО БЫТЬ ВОТ ТАК (Просто чистая функция без декоратора сверху!):
+# 🚨 ТУТ БІЛЬШЕ НЕМАЄ ДЕКОРАТОРА @router.message() — ВСЕ ОЧИЩЕНО ТА ВИПРАВЛЕНО
 async def send_human_message(message: Message, text: str, reply_markup=None):
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
         delay = max(1.0, min((len(text) * 0.03) + random.uniform(0.4, 1.0), 3.0))
@@ -153,38 +154,18 @@ async def send_human_message(message: Message, text: str, reply_markup=None):
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
 # ==========================================
 
-@router.message()
-async def check_testing_mode_message(message: Message):
+@router.message(Command("start"))
+async def cmd_start(message: Message):
     user_id = message.from_user.id
     if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
         await message.answer("🛠️ **Ведуться технічні роботи!**\n\nНаразі бот закритий для оновлення. Будь ласка, завітайте пізніше. Дякуємо за розуміння! 😉")
         return
-    
-    if message.text == "🗓️ Розклад": await show_schedule_days(message)
-    elif message.text == "📝 ДЗ": await show_subjects_for_hw(message)
-    elif message.text == "🤖 ШІ Допомога": await ai_help(message, dp.current_state(bot=bot, chat=message.chat.id, user=user_id))
-    elif message.text == "📊 Сер. бал": await ask_for_grades(message, dp.current_state(bot=bot, chat=message.chat.id, user=user_id))
-    elif message.text == "📚 Книги": await show_books(message)
-    elif message.text == "📌 Важливе": await show_important(message)
-    elif message.text == "🎲 Рандом": await show_random(message)
-    elif message.text == "⚙️ Налаштування": await show_settings(message)
-    elif message.text == "🛠️ Admin Panel": await admin_panel(message)
-
-@router.callback_query()
-async def check_testing_mode_callback(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
-        await callback.answer("🛠️ Ведуться технічні роботи! Доступ обмежено.", show_alert=True)
-        return
-
-@router.message(Command("start"))
-async def cmd_start(message: Message):
-    user_id = message.from_user.id
-    # Чистый запуск без проверок тех. работ, чтобы бот точно выдал меню
     await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
 
-
+@router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
 
 @router.callback_query(F.data.startswith("view_"))
@@ -196,7 +177,10 @@ async def process_view_hw(callback: CallbackQuery):
     await callback.message.edit_text(text=f"📝 **ДЗ з предмету {sub_name}:**\n\n{hw_text}", reply_markup=get_subjects_menu("view"))
     await callback.answer()
 
+@router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери день тижня:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
@@ -206,17 +190,33 @@ async def process_schedule_callback(callback: CallbackQuery):
     await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
     await callback.answer()
 
-async def show_books(message: Message): await send_human_message(message, BOOKS_DATA)
-async def show_important(message: Message): await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
+@router.message(F.text == "📚 Книги")
+async def handle_show_books(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    await send_human_message(message, BOOKS_DATA)
 
-async def show_random(message: Message):
+@router.message(F.text == "📌 Важливе")
+async def handle_show_important(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
+
+@router.message(F.text == "🎲 Рандом")
+async def handle_show_random(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     global RANDOM_MODE
-    if RANDOM_MODE == "dice": await message.answer_dice()
+    if RANDOM_MODE == "dice": 
+        await message.answer_dice()
     else:
         name = random.choice(RANDOM_NAMES)
         await send_human_message(message, f"🎲 Випадковий учень до дошки: **{name}**")
 
+@router.message(F.text == "📊 Сер. бал")
 async def ask_for_grades(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE && user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
     await state.set_state(BotStates.waiting_for_grades)
 
@@ -229,7 +229,7 @@ async def process_grades(message: Message, state: FSMContext):
         avg = sum(grades) / len(grades)
         await send_human_message(message, f"📊 Твій середній бал: {avg:.2f}")
     except ValueError:
-        await send_human_message(message, "❌ Будь ласка, введи коректні оцінки (числа від 1 до 12).")
+        await message.answer("❌ Будь ласка, введи коректні оцінки (числа від 1 до 12).")
     await state.clear()
 
 async def ask_free_ai(question: str) -> str:
@@ -247,7 +247,10 @@ async def ask_free_ai(question: str) -> str:
                 return "⚠️ Сервер ШІ тимчасово перевантажений."
     except Exception: return "❌ Не вдалося з'єднатися з ШІ."
 
-async def ai_help(message: Message, state: FSMContext):
+@router.message(F.text == "🤖 ШІ Допомога")
+async def handle_ai_help(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "🤖 **Ви увійшли в інтерактивний режим ШІ!**\n\nПиши свої питання підряд. Для виходу натисни кнопку нижче 👇", reply_markup=get_ai_mode_menu())
     await state.set_state(BotStates.waiting_for_question)
 
@@ -263,7 +266,11 @@ async def process_ai_question(message: Message, state: FSMContext):
         ai_response = await ask_free_ai(message.text)
     await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Пиши наступне запитання!_", reply_markup=get_ai_mode_menu())
 
-async def show_settings(message: Message): await send_human_message(message, "⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
+@router.message(F.text == "⚙️ Налаштування")
+async def show_settings(message: Message):
+    user_id = message.from_user.id
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    await send_human_message(message, "⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
 @router.callback_query(F.data == "profile_prediction")
 async def process_prediction(callback: CallbackQuery):
@@ -286,13 +293,17 @@ async def process_changelog(callback: CallbackQuery):
         "• **Нова архітектура:** Бот повністю переписаний на сучасний клас `aiogram 3.x`.\n"
         "• **Інтеграція ШІ:** Додано безкоштовний штучний інтелект, який працює без ключів та реєстрацій.\n"
         "• **Ієрархія прав:** Налаштовано 3 рівні адмінки (Помічник по ДЗ, Модератор та Супер-Адмін).\n"
-        "• **Керування доступами:** Реалізовано призначення адмінів 1 і 2飛рівня прямо через інлайн-кнопки в боті.\n"
+        "• **Керування доступами:** Реалізовано призначення адмінів 1 і 2 рівня прямо через інлайн-кнопки в боті.\n"
         "• **Режим тестування:** Додано глобальний перемикач тех. робіт, який закриває бот для звичайних учнів.\n"
         "• **База даних класу:** Внесено повний список із 28 учнів з індивідуальними досягненнями.\n"
         "• **Система звітів:** Додано щоденні відмітки відсутніх та автоматичне відправлення звітів старості.\n"
         "• **Робота 24/7:** Інтегровано веб-сервер `aiohttp` та систему фонового автопінгу від сну на Render."
     )
     await callback.answer()
+
+@router.message(F.text == "🛠️ Admin Panel")
+async def handle_admin_panel(message: Message):
+    await admin_panel(message)
 
 # ==========================================
 # 🛠️ АДМІНІСТРАТИВНА ПАНЕЛЬ ТА КЕРУВАННЯ
@@ -542,7 +553,7 @@ async def self_ping_task():
         await asyncio.sleep(600)
 
 # ==========================================
-# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER (ЖОРСТКИЙ ФІКС)
+# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
 # ==========================================
 async def main():
     logging.basicConfig(level=logging.INFO)
@@ -563,7 +574,7 @@ async def main():
 
     print(" Bot polling started...")
     
-    # 🚨 ЖОРСТКИЙ ФІКС КОНФЛІКТУ: Скидаємо вебхук та чекаємо 10 секунд, щоб Telegram вбив старі сесії
+    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА (СБРОС СЕССИЙ С ЗАДЕРЖКОЙ В 10 СЕКУНД)
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         print("⏳ Очищення сесій... Чекаємо 10 секунд для скидання конфлікту токена...")
@@ -571,10 +582,8 @@ async def main():
     except Exception as e:
         print(f"Пропуск очищення сесії: {e}")
 
-    try: 
-        await dp.start_polling(bot)
-    finally: 
-        await bot.session.close()
+    try: await dp.start_polling(bot)
+    finally: await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
