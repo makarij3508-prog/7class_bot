@@ -15,7 +15,7 @@ from aiohttp import web
 BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
 # 👑 ТВОЙ ID СУПЕР-АДМИНА (МАКАР) — Работает напрямую
-SUPER_ADMIN_IDS = [8791830931]
+SUPER_ADMIN_IDS = {8791830931}
 
 # 🪪 СИСТЕМА ПРАВ ПО ЮЗЕРНЕЙМАМ (Вписывай ники одноклассников сюда!)
 MODERATOR_USERNAMES = ["@play.funtime.su"]  # Рівень 2
@@ -45,7 +45,7 @@ USER_TELEGRAM_NAMES = {8791830931: "Макар",
                        "@ezhik_lite": "Артем",
                        "@Vladore1488": "Колодинський Богдан",
                        "@Sharik_xd": "Ковальчук Богдан"
-                       
+                      }
 USER_USERNAMES = {}                        # Связь @username -> ID
 
 # 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
