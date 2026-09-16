@@ -537,28 +537,42 @@ async def self_ping_task():
         await asyncio.sleep(600)
 
 # ==========================================
-# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
+# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER (ФІКС ЗАВИСАННЯ)
 # ==========================================
 async def main():
+    # Налаштовуємо логування, щоб бачити помилки в панелі Render
     logging.basicConfig(level=logging.INFO)
+    
+    # Обов'язково реєструємо роутер у диспетчері!
     dp.include_router(router)
     
+    # Ініціалізуємо веб-додаток aiohttp
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
     app.router.add_get("/webhook", handle_render_hc)
     
+    # Налаштовуємоrunner для веб-сервера
     port = int(os.getenv("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f" Web-server started on port {port}")
+    print(f"🌍 Web-server started on port {port}")
 
+    # Запускаємо фонову задачу автопінгу проти сну серверов
     asyncio.create_task(self_ping_task())
 
-    print(" Bot polling started...")
-    try: await dp.start_polling(bot)
-    finally: await bot.session.close()
+    print("🤖 Bot polling starting...")
+    
+    # ФІКС: Перед запуском полінгу видаляємо старі вебхуки, щоб Telegram знав, що ми працюємо через Polling
+    await bot.delete_webhook(drop_pending_updates=True)
+    
+    try:
+        # Запускаємо полінг
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
+    # Альтернативний чистий запуск без конфліктів Event Loop
     asyncio.run(main())
