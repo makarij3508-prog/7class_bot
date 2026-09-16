@@ -420,8 +420,22 @@ async def process_prediction(callback: CallbackQuery):
 @router.callback_query(F.data == "profile_achievements")
 async def process_achievements(callback: CallbackQuery):
     user_id = callback.from_user.id
-    if user_id in USER_TELEGRAM_NAMES: name = USER_TELEGRAM_NAMES[user_id]
-    else: name = RANDOM_NAMES[user_id % len(RANDOM_NAMES)]
+    username = callback.from_user.username
+    user_key = f"@{username.lower()}" if username else ""
+    
+    # ЖЁСТКАЯ ПРОВЕРКА: Если это ты (Макар), бот ВСЕГДА назовёт тебя Макаром!
+    if user_id == 8791830931:
+        name = "Макар"
+    elif user_key in USER_TELEGRAM_NAMES:
+        name = USER_TELEGRAM_NAMES[user_key]
+    else:
+        name = callback.from_user.first_name if callback.from_user.first_name else "Учень"
+        
+    ach_list = USER_ACHIEVEMENTS.get(name, ["🥇 Перший запуск бота", "🥈 Активний учень 7 класу"])
+    formatted = "\n".join(ach_list)
+    await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n{formatted}")
+    await callback.answer()
+
         
     ach_list = USER_ACHIEVEMENTS.get(name, ["Поки що немає досягнень"])
     formatted = "\n".join(ach_list)
