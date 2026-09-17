@@ -12,59 +12,49 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
+# 🚨 ТВІЙ ЧИСТИЙ ТОКЕН БОТА
 BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
 
-# 👑 ТВОЙ ID СУПЕР-АДМИНА (МАКАР) — Работает напрямую
-SUPER_ADMIN_IDS = {8791830931}
+# 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — РІВЕНЬ 5)
+SUPER_ADMIN_IDS = 
 
-# 🪪 СИСТЕМА ПРАВ ПО ЮЗЕРНЕЙМАМ (Вписывай ники одноклассников сюда!)
-MODERATOR_USERNAMES = ["@play.funtime.su"]  # Рівень 2
-ASSISTANT_USERNAMES = ["@sanichka_gg"]                         # Рівень 1
-TESTER_USERNAMES = ["@пример_тестировщика"]                           # Тестировщики
+# 🪪 СИСТЕМА ПРАВ ПО ЮЗЕРНЕЙМАХ (Сюди вписуй ніки через @, бот автоматично видасть їм доступ!)
+ADMIN_L4_USERNAMES = ["@пример_админа_л4"]  # Головний Адмін (Рівень 4 — керує молодшими)
+MODERATOR_USERNAMES = []                     # Модератори чату (Рівень 3 — мут/бан)
+STAROSTA_USERNAMES = []                      # Старости (Рівень 2 — відмітки прогульників)
+ASSISTANT_USERNAMES = []                     # Помічники по ДЗ (Рівень 1 — тільки домашня робота)
+TESTER_USERNAMES = []                        # Тестувальники тех. робіт
 
-# 📢 ЮЗЕРНЕЙМ СТАРОСТЫ (Кому летит отчёт) — Сюда впиши ник старосты
-STAROSTA_USERNAME = "@myveronichkam"
+# 👑 ЮЗЕРНЕЙМ КЛАСНОГО КЕРІВНИКА (Вчитель — VIP-рівень з модерацією чату)
+TEACHER_USERNAME = "@пример_учителя"
 
-# 📊 Внутренние списки ID (Заполняются ботом автоматически на лету)
+# 📊 Внутрішні динамічні списки ID (Заповнюються автоматично при старті /start)
+ADMIN_L4_IDS = []
 MODERATOR_IDS = []
 HW_ASSISTANT_IDS = []
+STAROSTA_IDS = []
 TESTER_IDS = []
-STAROSTA_CHAT_ID = 0  # Сюда автоматически запишется ID старосты, когда он нажмет /start
+TEACHER_CHAT_ID = 0  # Сюди прилетить ID вчительки для звітів старости
 
-# Словники динамических связок
-USER_TELEGRAM_NAMES = {
-    "8791830931": "Макар",
-    "@llona_x": "Ілона",
-    "@selarkin": "Роман",
-    "@play.funtime.su": "Едуард",
-    "@marri_chk": "Марічка",
-    "@myveronichkam": "Вероніка",
-    "@Red_tea21": "Назарій",
-    "@Mi42a": "Мирослава",
-    "@sanichka_gg": "Олександр",
-    "@shadow123446": "Емілія",
-    "@ezhik_lite": "Артем",
-    "@Vladore1488": "Колодинський Богдан",
-    "@Sharik_xd": "Ковальчук Богдан"
-}
-
-USER_USERNAMES = {}  # Цей рядок лишаємо повністю порожнім
+# Словники зв'язків
+USER_TELEGRAM_NAMES = {8791830931: "Макар"}
+USER_USERNAMES = {}  # Зв'язок @username -> ID
 
 # 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
-CHAT_REGISTERED_USERS = {}  # ID -> ім'я тех, кто в чате
-BANNED_USERS = []           # Чёрный список (ID забаненных)
-MUTED_USERS = {}            # ID -> timestamp окончания мута
+CHAT_REGISTERED_USERS = {}  # ID -> ім'я тих, хто зараз в кімнаті чату
+BANNED_USERS = []           # Чорний список (ID забанених)
+MUTED_USERS = {}            # Словник мутів: ID -> timestamp закінчення муту
 
 # 🛠️ ГЛОБАЛЬНИЙ РЕЖИМ ТЕСТУВАННЯ
 IS_TESTING_MODE = False
 
 HOMEWORK_DATA = {}
 IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації."
-BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження твоїх підручників."
+BOOKS_DATA = "📚 **Електронні підручники для 7 класу:**\n\nТут будуть посилання на завантаження підручників."
 ABSENT_TODAY_LIST = []
 RANDOM_MODE = "dice"
 
-# 👥 ПОВА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів)
+# 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 учнів)
 RANDOM_NAMES = [
     "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
@@ -72,6 +62,22 @@ RANDOM_NAMES = [
     "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Макс"
 ]
 USER_ACHIEVEMENTS = {name: ["🥇 Перший запуск бота", "🥈 Активний учень 7 класу"] for name in RANDOM_NAMES}
+
+# 🪪 БАЗА ДАНИХ НІКІВ ОДНОКЛАСНИКІВ ЗІ СКРИНШОТА (ПРИВ'ЯЗКА ІМЕН)
+USER_USERNAMES_TEXT = {
+    "@llona_x": "Ілона", 
+    "@selarkin": "Роман", 
+    "@play.funtime.su": "Едуард",
+    "@marri_chk": "Марічка", 
+    "@myveronichkam": "Вероніка", 
+    "@Red_tea21": "Назарій",
+    "@Mi42a": "Мирослава", 
+    "@sanichka_gg": "Олександр", 
+    "@shadow123446": "Емілія",
+    "@ezhik_lite": "Артем", 
+    "@Vladore1488": "Колодинський Богдан", 
+    "@Sharik_xd": "Ковальчук Богдан"
+}
 
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
@@ -97,7 +103,6 @@ PREDICTIONS = [
     "🎒 Ти забудеш щось важливе вдома, перевір рюкзак просто зараз!",
     "🍀 На укр. мові тебе сьогодні омине виклик до дошки. Везунчик!",
     "🤫 Хтось із класу готує для тебе приємний сюрприз або секрет.",
-    "📈 Твій середній бал скоро злетить вгору, продовжуй в тому ж дусі!",
     "🦉 Сьогодні вчитель фізики буде в дуже доброму гуморі.",
     "🎨 Чудовий день для творчості, на мистецтві буде легка тема!"
 ]
@@ -112,7 +117,7 @@ class BotStates(StatesGroup):
     waiting_for_absence_info = State()
     admin_choosing_user_ach = State()
     admin_input_achievement = State()
-    admin_input_username_for_level = State()  # Состояние для ввода @username
+    admin_input_username_for_level = State()  # Стан для вводу ніків адмінами
     user_in_chat_window = State()
 
 bot = Bot(token=BOT_TOKEN)
@@ -129,7 +134,9 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
         [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
     ]
-    if user_id in SUPER_ADMIN_IDS or user_id in MODERATOR_IDS or user_id in HW_ASSISTANT_IDS or user_id in TESTER_IDS:
+    # Перевірка на будь-який з 5 рівнів адмінки або вчителя
+    if (user_id in SUPER_ADMIN_IDS or user_id in ADMIN_L4_IDS or user_id in MODERATOR_IDS or 
+        user_id in HW_ASSISTANT_IDS or user_id in STAROSTA_IDS or user_id in TESTER_IDS or user_id == TEACHER_CHAT_ID):
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
@@ -160,18 +167,26 @@ def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
 
 def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     keyboard = []
-    if user_id in HW_ASSISTANT_IDS or user_id in MODERATOR_IDS or user_id in SUPER_ADMIN_IDS:
+    # Рівень 1, 2, 4, 5 можуть міняти ДЗ
+    if user_id in HW_ASSISTANT_IDS or user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id in SUPER_ADMIN_IDS:
         keyboard.append([InlineKeyboardButton(text="📝 Змінити ДЗ", callback_data="admin_add_hw")])
-    if user_id in MODERATOR_IDS or user_id in SUPER_ADMIN_IDS:
+    # Рівень 2, 4, 5 можуть міняти Розклад
+    if user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id in SUPER_ADMIN_IDS:
         keyboard.append([InlineKeyboardButton(text="🗓️ Змінити Розклад", callback_data="admin_edit_sch")])
-        keyboard.append([InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")])
-        keyboard.append([InlineKeyboardButton(text="🎲 Налаштувати Рандом", callback_data="admin_config_random"), InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
-        keyboard.append([InlineKeyboardButton(text="👥 Відмітити відсутнього", callback_data="admin_mark_attendance"), InlineKeyboardButton(text="📢 Надіслати звіт старості", callback_data="admin_send_report")])
+    # Рівень 2 (Староста), 4, 5 — відмітка прогульників та звіти вчителю
+    if user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id in SUPER_ADMIN_IDS:
+        keyboard.append([InlineKeyboardButton(text="👥 Відмітити відсутнього", callback_data="admin_mark_attendance"), 
+                         InlineKeyboardButton(text="📢 Надіслати звіт вчителю", callback_data="admin_send_report")])
+    # Рівень 4, 5 та Вчитель — Важливе оголошення та Книги
+    if user_id in ADMIN_L4_IDS or user_id in SUPER_ADMIN_IDS or user_id == TEACHER_CHAT_ID:
+        keyboard.append([InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), 
+                         InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")])
+    # Рівень 4 та 5 — Керування молодшими адмінами (1, 2, 3) або старшими (4)
+    if user_id in ADMIN_L4_IDS or user_id in SUPER_ADMIN_IDS:
+        keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu")])
+    # Тільки Рівень 5 (Ти, Макар) — Тех. Режим (Тестування)
     if user_id in SUPER_ADMIN_IDS:
-        keyboard.append([
-            InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test"),
-            InlineKeyboardButton(text="👑 Призначити Адміна", callback_data="admin_give_level_menu")
-        ])
+        keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
@@ -180,9 +195,7 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
-    # Мгновенная отправка без симуляции печати и зависаний!
     return await message.answer(text, reply_markup=reply_markup)
-
 
 # ==========================================
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
@@ -198,39 +211,49 @@ async def cmd_start(message: Message):
         user_key = f"@{username.lower()}"
         USER_USERNAMES[user_key] = user_id
         
-        # Перевіряємо роль модератора (Рівень 2)
+        # Перевіряємо роль Головного Адміна (Рівень 4)
+        if user_key in ADMIN_L4_USERNAMES and user_id not in ADMIN_L4_IDS:
+            ADMIN_L4_IDS.append(user_id)
+            print(f"✨ Роль Головного Адміна (Рівень 4) активована для {user_key}")
+            
+        # Перевіряємо роль Модератора чату (Рівень 3)
         if user_key in MODERATOR_USERNAMES and user_id not in MODERATOR_IDS:
             MODERATOR_IDS.append(user_id)
-            print(f"✨ Роль Модератора автоматично видана для {user_key}")
+            print(f"✨ Роль Модератора чату (Рівень 3) активована для {user_key}")
+            
+        # Перевіряємо роль Старости (Рівень 2)
+        if user_key in STAROSTA_USERNAMES and user_id not in STAROSTA_IDS:
+            STAROSTA_IDS.append(user_id)
+            print(f"✨ Роль Старости (Рівень 2) активована для {user_key}")
             
         # Перевіряємо роль помічника по ДЗ (Рівень 1)
         if user_key in ASSISTANT_USERNAMES and user_id not in HW_ASSISTANT_IDS:
             HW_ASSISTANT_IDS.append(user_id)
-            print(f"✨ Роль Помічника по ДЗ автоматично видана для {user_key}")
+            print(f"✨ Роль Помічника по ДЗ (Рівень 1) активована для {user_key}")
             
         # Перевіряємо роль тестувальника
         if user_key in TESTER_USERNAMES and user_id not in TESTER_IDS:
             TESTER_IDS.append(user_id)
-            print(f"✨ Роль Teстувальника автоматично видана для {user_key}")
+            print(f"✨ Роль Teстувальника активована для {user_key}")
             
-        # Перевіряємо роль старости
-        if user_key == STAROSTA_USERNAME.lower():
-            global STAROSTA_CHAT_ID
-            STAROSTA_CHAT_ID = user_id
-            print(f"✨ ID Старости класу автоматично прив'язано до {user_key}")
+        # Перевіряємо роль Класного Керівника (Вчителя)
+        if user_key == TEACHER_USERNAME.lower():
+            global TEACHER_CHAT_ID
+            TEACHER_CHAT_ID = user_id
+            print(f"✨ Класний Керівник (Вчитель) успішно авторизований: {user_key}")
 
     await send_human_message(message, "Привіт! Я твій помічник для 7 класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
 
 @router.callback_query(F.data.startswith("view_"))
 async def process_view_hw(callback: CallbackQuery):
     data_parts = callback.data.split("_", maxsplit=1)
-    subject = data_parts[1] if len(data_parts) > 1 else ""
+    subject = data_parts if len(data_parts) > 1 else ""
     sub_name = SUBJECT_NAMES.get(subject, "Предмет")
     hw_text = HOMEWORK_DATA.get(subject, "Завдання поки що не додано.")
     await callback.message.edit_text(text=f"📝 **ДЗ з предмету {sub_name}:**\n\n{hw_text}", reply_markup=get_subjects_menu("view"))
@@ -239,32 +262,32 @@ async def process_view_hw(callback: CallbackQuery):
 @router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Обери день тижня:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
 async def process_schedule_callback(callback: CallbackQuery):
     data_parts = callback.data.split("_", maxsplit=1)
-    day = data_parts[1] if len(data_parts) > 1 else ""
+    day = data_parts if len(data_parts) > 1 else ""
     await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
     await callback.answer()
 
 @router.message(F.text == "📚 Книги")
 async def handle_show_books(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, BOOKS_DATA)
 
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🎲 Рандом")
 async def handle_show_random(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     global RANDOM_MODE
     if RANDOM_MODE == "dice": await message.answer_dice()
     else:
@@ -274,7 +297,7 @@ async def handle_show_random(message: Message):
 @router.message(F.text == "📊 Сер. бал")
 async def ask_for_grades(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
     await state.set_state(BotStates.waiting_for_grades)
 
@@ -294,7 +317,7 @@ async def ask_free_ai(question: str) -> str:
     url = "https://pollinations.ai"
     payload = {
         "messages": [
-            {"role": "system", "content": "Ти помічник для 7 класу. Відповідай чітко, коротко, українською."},
+            {"role": "system", "content": "Ти помічник для 7 класу. Відповідай чітко, українською."},
             {"role": "user", "content": question}
         ], "private": True
     }
@@ -308,7 +331,7 @@ async def ask_free_ai(question: str) -> str:
 @router.message(F.text == "🤖 ШІ Допомога")
 async def handle_ai_help(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, "🤖 **Ви увійшли в інтерактивний режим ШІ!**\n\nПиши свої питання підряд. Для виходу натисни кнопку нижче 👇", reply_markup=get_ai_mode_menu())
     await state.set_state(BotStates.waiting_for_question)
 
@@ -332,13 +355,11 @@ async def process_ai_question(message: Message, state: FSMContext):
 async def enter_chat_room(message: Message, state: FSMContext):
     user_id = message.from_user.id
     
-    # Глобальна перевірка на бан
     if user_id in BANNED_USERS:
         await message.answer("🛑 **Доступ заблоковано!**\n\nВи забанені в чаті адміністрацією класу за порушення правил.")
         return
 
-    # Перевірка на тех. роботи для чату
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in MODERATOR_IDS and user_id not in HW_ASSISTANT_IDS and user_id not in TESTER_IDS:
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS:
         await message.answer("🛠️ Чат закритий на технічні роботи.")
         return
 
@@ -370,7 +391,6 @@ async def process_live_chat_message(message: Message):
         await message.answer("🛑 Вас забанено.")
         return
 
-    # Перевірка на Мут
     if user_id in MUTED_USERS:
         now = datetime.now().timestamp()
         if now < MUTED_USERS[user_id]:
@@ -388,8 +408,25 @@ async def process_live_chat_message(message: Message):
             try: await bot.send_message(chat_id=target_id, text=f"💬 **[{sender_name}]:** {message.text}")
             except Exception: pass
 
-    # Лог чату для ВСІХ АДМІНІВ з інлайн-кнопками покарання
-    all_admins = set(SUPER_ADMIN_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    # 👑 ІМУНІТЕТ ДЛЯ АДМІНІСТРАЦІЇ ТА ВЧИТЕЛЯ: Кнопки покарання не створюються, якщо пише адмін чи вчитель
+    all_protected_ids = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS + STAROSTA_IDS + TESTER_IDS)
+    if user_id == TEACHER_CHAT_ID or user_id in all_protected_ids:
+        # Повідомлення просто логується адмінам без кнопок покарання
+        all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+        for admin_id in all_admins:
+            try:
+                await bot.send_message(
+                    chat_id=admin_id,
+                    text=f"👁️ **[ЧАТЛОГ - ЗАХИЩЕНИЙ] {sender_name} (ID: `{user_id}`) написав:**\n«_{message.text}_»"
+                )
+            except Exception: pass
+        return
+
+    # Якщо пише звичайний учень — створюємо кнопки покарання (МУТ/БАН)
+    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    # Вчитель також отримує лог із кнопками модерації для звичайних учнів!
+    if TEACHER_CHAT_ID: all_admins.add(TEACHER_CHAT_ID)
+
     punish_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🤫 Мут (15 хв)", callback_data=f"mute_15_{user_id}_{sender_name}"),
          InlineKeyboardButton(text="🛑 БАН у чаті", callback_data=f"ban_{user_id}_{sender_name}")]
@@ -423,11 +460,10 @@ async def process_achievements(callback: CallbackQuery):
     username = callback.from_user.username
     user_key = f"@{username.lower()}" if username else ""
     
-    # ЖЁСТКАЯ ПРОВЕРКА: Если это ты (Макар), бот ВСЕГДА назовёт тебя Макаром!
     if user_id == 8791830931:
         name = "Макар"
-    elif user_key in USER_TELEGRAM_NAMES:
-        name = USER_TELEGRAM_NAMES[user_key]
+    elif user_key in USER_USERNAMES_TEXT:
+        name = USER_USERNAMES_TEXT[user_key]
     else:
         name = callback.from_user.first_name if callback.from_user.first_name else "Учень"
         
@@ -436,19 +472,15 @@ async def process_achievements(callback: CallbackQuery):
     await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n{formatted}")
     await callback.answer()
 
-        
-    ach_list = USER_ACHIEVEMENTS.get(name, ["Поки що немає досягнень"])
-    formatted = "\n".join(ach_list)
-    await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n{formatted}")
-    await callback.answer()
-
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
     await callback.message.answer(
-        "📜 **Офіційний лог оновлень (v2.0):**\n\n"
-        "• **Повна прив'язка по Юзернеймах:** І модератори, і учні, і староста з тестувальниками додаються через @username. Більше ніяких ID!\n"
-        "• **Модерований Чат класу:** Інтегровано мут на 15 хв та бан з автоматичними повідомленнями в чат.\n"
-        "• **Робота 24/7:** Інтегровано систему фонового автопінгу від сну на Render."
+        "📜 **Офіційний лог оновлень (v2.1):**\n\n"
+        "• **Екосистема 5 рівнів:** Повністю перебудовано рівні доступу (від Помічника ДЗ до Головного Розробника Макара).\n"
+        "• **VIP-роль Вчителя:** Класний керівник отримала окремий кабінет, звіти від старости та модерацію учнів.\n"
+        "• **Абсолютний імунітет:** Адмін-склад захищений від випадкових мутів/банів з боку вчителя чи інших адмінів.\n"
+        "• **Авто-алерти чату:** Будь-які покарання миттєво публікуються системою в загальну кімнату чату класу.\n"
+        "• **Стабільність 24/7:** Покращено систему захисту від сну Render та фіксації токенів."
     )
     await callback.answer()
 
@@ -461,17 +493,18 @@ async def handle_admin_panel(message: Message): await admin_panel(message)
 
 async def admin_panel(message: Message):
     user_id = message.from_user.id
-    if user_id in SUPER_ADMIN_IDS or user_id in MODERATOR_IDS or user_id in HW_ASSISTANT_IDS:
+    all_protected_ids = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS + STAROSTA_IDS + TESTER_IDS)
+    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
         await send_human_message(message, "🛠️ Вітаємо в панелі адміністратора. Доступні функції згідно з вашим рівнем прав:", reply_markup=get_admin_menu_keyboard(user_id))
     else:
         await send_human_message(message, "🛑 У вас немає доступу до цієї команди.")
 
-# 🚨 АДМІН-КНОПКИ: ОБРОБКА МУТУ ТА БАНУ З ЧАТЛОГІВ
+# 🚨 ОБРОБКА МУТУ ТА БАНУ З ЧАТЛОГІВ ДЛЯ АДМІНІВ ТА ВЧИТЕЛЯ
 @router.callback_query(F.data.startswith("mute_15_") | F.data.startswith("ban_"))
 async def process_chat_punishment(callback: CallbackQuery):
     admin_id = callback.from_user.id
-    all_admins = set(SUPER_ADMIN_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
-    if admin_id not in all_admins: return
+    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    if admin_id not in all_admins and admin_id != TEACHER_CHAT_ID: return
 
     data_parts = callback.data.split("_")
     action = data_parts[0]
@@ -479,7 +512,6 @@ async def process_chat_punishment(callback: CallbackQuery):
     if action == "mute":
         target_id = int(data_parts[2])
         target_name = data_parts[3]
-        # Вішаємо мут на 15 хвилин від поточного часу
         MUTED_USERS[target_id] = datetime.now().timestamp() + 900
         alert_text = f"🤫 **Користувач {target_name} замучений на 15 хв за порушення правил чату!**"
     else:
@@ -488,72 +520,86 @@ async def process_chat_punishment(callback: CallbackQuery):
         if target_id not in BANNED_USERS: BANNED_USERS.append(target_id)
         alert_text = f"🛑 **Користувач {target_name} назавжди забанений у чаті класу!**"
 
-    # Автоматично надсилаємо системне повідомлення в загальну кімнату чату класу
+    # Системний алерт летить усім, хто зараз сидить у чаті класу
     for user_id in list(CHAT_REGISTERED_USERS.keys()):
         try: await bot.send_message(chat_id=user_id, text=alert_text)
         except Exception: pass
 
-    await callback.message.edit_text(text=f"✅ Покорання успішно застосовано!\n{alert_text}")
+    await callback.message.edit_text(text=f"✅ Покарання успішно застосовано!\n{alert_text}")
     await callback.answer()
 
-# 👑 СУПЕР-АДМІН: ПРИЗНАЧЕННЯ НОВОГО АДМІНА ПО ЮЗЕРНЕЙМУ
+# 👑 НОВОЕ МЕНЮ НАСТРОЙКИ УРОВНЕЙ ДОСТУПА ПО ЮЗЕРНЕЙМАМ
 @router.callback_query(F.data == "admin_give_level_menu")
 async def admin_start_give_level(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS: return
-    buttons = [[InlineKeyboardButton(text=name, callback_data=f"giveadm_{name}")] for name in RANDOM_NAMES]
-    await callback.message.answer("👑 **Оберіть учня, якого хочете зробити адміністратором:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
-    await callback.answer()
-
-@router.callback_query(F.data.startswith("giveadm_"))
-async def admin_chosen_user_for_level(callback: CallbackQuery, state: FSMContext):
-    data_parts = callback.data.split("_", maxsplit=1)
-    name = data_parts[1] if len(data_parts) > 1 else "Учень"
-    await state.update_data(chosen_admin_name=name)
-    level_menu = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📐 Рівень 1 (Помічник по ДЗ)", callback_data="setlevel_1")],
-        [InlineKeyboardButton(text="⭐ Рівень 2 (Модератор / Староста)", callback_data="setlevel_2")]
-    ])
-    await callback.message.answer(f"Який рівень прав ви хочете надати учню **{name}**?", reply_markup=level_menu)
+    user_id = callback.from_user.id
+    
+    # Твоё меню (Рівень 5) — может назначить Головного Админа (Рівень 4)
+    if user_id in SUPER_ADMIN_IDS:
+        menu = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="⭐ Рівень 4 (Головний Адміністратор)", callback_data="setlevel_4")]
+        ])
+        await callback.message.answer("👑 **Виберіть рівень прав, який хочете надати користувачу:**", reply_markup=menu)
+    # Меню твоего зама (Рівень 4) — может назначать только младших (1, 2, 3)
+    elif user_id in ADMIN_L4_IDS:
+        menu = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📐 Рівень 1 (Помічник по ДЗ)", callback_data="setlevel_1")],
+            [InlineKeyboardButton(text="👥 Рівень 2 (Староста / Зам. старости)", callback_data="setlevel_2")],
+            [InlineKeyboardButton(text="🛡️ Рівень 3 (Модератор чату)", callback_data="setlevel_3")]
+        ])
+        await callback.message.answer("⚙️ **Виберіть рівень прав для призначення (Доступно для Рівня 4):**", reply_markup=menu)
     await callback.answer()
 
 @router.callback_query(F.data.startswith("setlevel_"))
-async def admin_input_id_for_level(callback: CallbackQuery, state: FSMContext):
+async def admin_input_username_for_level(callback: CallbackQuery, state: FSMContext):
     data_parts = callback.data.split("_", maxsplit=1)
     level = int(data_parts[1]) if len(data_parts) > 1 else 1
     await state.update_data(chosen_level=level)
-    await callback.message.answer("⚙️ Тепер, будь ласка, **введіть юзернейм цього учня** (наприклад: `@andrey`):")
+    await callback.message.answer("⚙️ Тепер, будь ласка, **введіть юзернейм учня** (наприклад: `@vlad_funtime_ua`):")
     await state.set_state(BotStates.admin_input_username_for_level)
     await callback.answer()
 
 @router.message(BotStates.admin_input_username_for_level)
 async def admin_save_level_by_username(message: Message, state: FSMContext):
-    if message.from_user.id not in SUPER_ADMIN_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS: return
     
     target_username = message.text.strip().lower()
     if not target_username.startswith("@"): target_username = f"@{target_username}"
     
     data = await state.get_data()
-    name = data.get("chosen_admin_name")
     level = data.get("chosen_level")
     
-    # Записуємо ник у глобальні списки Части 1
+    # ТРЕД КОМАНДОВАНИЯ: Рівень 4 не может назначить Рівень 4
+    if level == 4 and user_id not in SUPER_ADMIN_IDS:
+        await message.answer("🛑 Помилка! Тільки Головний Розробник (Макар) може призначати Рівень 4.")
+        await state.clear()
+        return
+
+    # Запись ников в глобальные списки
     if level == 1:
         if target_username not in ASSISTANT_USERNAMES: ASSISTANT_USERNAMES.append(target_username)
         role_text = "📐 Рівень 1 (Помічник по ДЗ)"
     elif level == 2:
+        if target_username not in STAROSTA_USERNAMES: STAROSTA_USERNAMES.append(target_username)
+        role_text = "👥 Рівень 2 (Староста / Зам. старости)"
+    elif level == 3:
         if target_username not in MODERATOR_USERNAMES: MODERATOR_USERNAMES.append(target_username)
-        role_text = "⭐ Рівень 2 (Модератор / Староста)"
+        role_text = "🛡️ Рівень 3 (Модератор чату)"
+    elif level == 4:
+        if target_username not in ADMIN_L4_USERNAMES: ADMIN_L4_USERNAMES.append(target_username)
+        role_text = "⭐ Рівень 4 (Головний Адміністратор)"
 
-    # Якщо учень вже запускав бота і його ID є в базі, прилетить миттєвий апгрейд
+    # Накатываем апгрейд прав на лету, если пользователь уже жал старт
     target_id = USER_USERNAMES.get(target_username)
     if target_id:
         if level == 1 and target_id not in HW_ASSISTANT_IDS: HW_ASSISTANT_IDS.append(target_id)
-        if level == 2 and target_id not in MODERATOR_IDS: MODERATOR_IDS.append(target_id)
-        status = "(Користувача розпізнано, права активовано!)"
-    else:
-        status = "(Користувач ще не запускав бота, права активуються автоматично при його першому старті!)"
+        if level == 2 and target_id not in STAROSTA_IDS: STAROSTA_IDS.append(target_id)
+        if level == 3 and target_id not in MODERATOR_IDS: MODERATOR_IDS.append(target_id)
+        if level == 4 and target_id not in ADMIN_L4_IDS: ADMIN_L4_IDS.append(target_id)
+        status = "(Користувача знайдено в мережі, права активовано!)"
+    else: status = "(Користувач ще не запускав бота, права активуються автоматично при його старті!)"
         
-    await message.answer(f"✅ Учня **{name}** успішно внесено до списків ролей!\n\n**Посада:** {role_text}\n**Юзернейм:** `{target_username}`\n⚙️ {status}")
+    await message.answer(f"✅ Юзернейм `{target_username}` успішно внесено до бази!\n\n**Права:** {role_text}\n⚙️ {status}")
     await state.clear()
 
 @router.callback_query(F.data == "admin_toggle_test")
@@ -567,7 +613,7 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
 
 @router.callback_query(F.data == "admin_manage_ach")
 async def admin_start_manage_ach(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in ADMIN_L4_IDS: return
     buttons = [[InlineKeyboardButton(text=name, callback_data=f"achuser_{name}")] for name in RANDOM_NAMES]
     await callback.message.answer("Оберіть учня, якому хочете додати або змінити досягнення:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await callback.answer()
@@ -583,7 +629,7 @@ async def admin_chosen_user_for_ach(callback: CallbackQuery, state: FSMContext):
 
 @router.message(BotStates.admin_input_achievement)
 async def admin_save_user_achievement(message: Message, state: FSMContext):
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS: return
+    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS: return
     data = await state.get_data()
     name = data.get("target_student")
     if name in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[name].append(message.text)
@@ -593,7 +639,8 @@ async def admin_save_user_achievement(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "admin_add_hw")
 async def admin_choose_subject_hw(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS and callback.from_user.id not in HW_ASSISTANT_IDS: return
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: return
     await callback.message.answer("Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("edit_hw"))
     await callback.answer()
 
@@ -609,7 +656,8 @@ async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.waiting_for_hw_text)
 async def admin_save_hw_text(message: Message, state: FSMContext):
     global HOMEWORK_DATA
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS and message.from_user.id not in HW_ASSISTANT_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: return
     data = await state.get_data()
     subject = data.get("chosen_subject")
     HOMEWORK_DATA[subject] = message.text
@@ -618,7 +666,8 @@ async def admin_save_hw_text(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "admin_edit_sch")
 async def admin_choose_day_sch(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
     await callback.message.answer("Оберіть день для зміни розкладу:", reply_markup=get_days_menu("edit_sch"))
     await callback.answer()
 
@@ -634,7 +683,8 @@ async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.waiting_for_schedule_text)
 async def admin_save_sch_text(message: Message, state: FSMContext):
     global SCHEDULE_DATA
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
     data = await state.get_data()
     day = data.get("chosen_day")
     SCHEDULE_DATA[day] = message.text
@@ -643,7 +693,8 @@ async def admin_save_sch_text(message: Message, state: FSMContext):
 
 @router.callback_query(F.data == "admin_add_important")
 async def admin_input_important(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
     await callback.message.answer("Введіть текст нового важливого оголошення:")
     await state.set_state(BotStates.waiting_for_important_text)
     await callback.answer()
@@ -651,14 +702,16 @@ async def admin_input_important(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.waiting_for_important_text)
 async def admin_save_important(message: Message, state: FSMContext):
     global IMPORTANT_ANNOUNCEMENT
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
     IMPORTANT_ANNOUNCEMENT = message.text
-    await message.answer("✅ Важливе оголошення оновлено!")
+    await message.answer("✅ Важливе оголошення оновлено для всього класу!")
     await state.clear()
 
 @router.callback_query(F.data == "admin_edit_books")
 async def admin_input_books(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
     await callback.message.answer("Введіть новий список книг / посилань:")
     await state.set_state(BotStates.waiting_for_books_text)
     await callback.answer()
@@ -666,35 +719,16 @@ async def admin_input_books(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.waiting_for_books_text)
 async def admin_save_books(message: Message, state: FSMContext):
     global BOOKS_DATA
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
     BOOKS_DATA = message.text
     await message.answer("✅ Список книг успішно оновлено!")
     await state.clear()
 
-@router.callback_query(F.data == "admin_config_random")
-async def admin_config_random_mode(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
-    menu = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎲 Смайл кубика (Dice)", callback_data="set_rand_dice")],
-        [InlineKeyboardButton(text="👥 Випадкове ім'я учня", callback_data="set_rand_name")]
-    ])
-    await callback.message.answer("Оберіть режим роботи кнопки Рандом:", reply_markup=menu)
-    await callback.answer()
-
-@router.callback_query(F.data.startswith("set_rand_"))
-async def admin_set_random_mode(callback: CallbackQuery):
-    global RANDOM_MODE
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
-    data_parts = callback.data.split("_", maxsplit=2)
-    mode = data_parts[2] if len(data_parts) > 2 else "dice"
-    RANDOM_MODE = mode
-    mode_text = "Кубик (Dice)" if mode == "dice" else "Вибір учня зі списку"
-    await callback.message.answer(f"✅ Режим рандому змінено на: **{mode_text}**")
-    await callback.answer()
-
 @router.callback_query(F.data == "admin_mark_attendance")
 async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
     await callback.message.answer("📝 Введіть прізвища або імена учнів, які сьогодні відсутні (через кому або з нового рядка):")
     await state.set_state(BotStates.waiting_for_absence_info)
     await callback.answer()
@@ -702,7 +736,8 @@ async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.waiting_for_absence_info)
 async def admin_save_attendance(message: Message, state: FSMContext):
     global ABSENT_TODAY_LIST
-    if message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in MODERATOR_IDS: return
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
     text = message.text.replace("\n", ",")
     ABSENT_TODAY_LIST = [name.strip() for name in text.split(",") if name.strip()]
     if ABSENT_TODAY_LIST:
@@ -712,22 +747,27 @@ async def admin_save_attendance(message: Message, state: FSMContext):
     await state.clear()
 
 @router.callback_query(F.data == "admin_send_report")
-async def admin_send_report_to_starosta(callback: CallbackQuery):
-    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in MODERATOR_IDS: return
-    if not STAROSTA_CHAT_ID:
-        await callback.message.answer("⚠️ Староста ще не запустив бота, його ID не знайдено!")
-        await callback.answer()
-        return
+async def admin_send_report_to_teacher(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    
     if not ABSENT_TODAY_LIST:
         await callback.message.answer("⚠️ Список відсутніх порожній!")
         await callback.answer()
         return
+        
     formatted = "\n".join([f"• {name}" for name in ABSENT_TODAY_LIST])
-    report_text = f"📢 **Щоденний звіт про відсутніх**\n\nУчнів, яких немає:\n{formatted}\n\nВсього: {len(ABSENT_TODAY_LIST)}"
+    report_text = f"📢 **Щоденний звіт про відсутніх учнів**\n\nУчнів, яких сьогодні немає:\n{formatted}\n\nВсього відсутніх: {len(ABSENT_TODAY_LIST)}"
+    
+    # 👑 ЛОГИКА: Отчёт летит напрямую Классному Руководителю!
+    target_chat_id = TEACHER_CHAT_ID if TEACHER_CHAT_ID else 8791830931
+    status_msg = "в особисті повідомлення Класному Керівнику!" if TEACHER_CHAT_ID else "вам ЛС (Вчителька ще не активувала бота)."
+    
     try:
-        await bot.send_message(chat_id=STAROSTA_CHAT_ID, text=report_text)
-        await callback.message.answer("🚀 Звіт надіслано старості!")
-    except Exception: await callback.message.answer(f"❌ Помилка відправки! Перевірте статус старости.")
+        await bot.send_message(chat_id=target_chat_id, text=report_text)
+        await callback.message.answer(f"🚀 Звіт успішно надіслано {status_msg}")
+    except Exception: 
+        await callback.message.answer(f"❌ Помилка відправки! Перевірте статус підключення.")
     await callback.answer()
 
 # ==========================================
