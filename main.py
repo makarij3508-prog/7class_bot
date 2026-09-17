@@ -642,6 +642,162 @@ async def admin_save_user_achievement(message: Message, state: FSMContext):
     await message.answer(f"✅ Досягнення для **{name}** успішно додано!")
     await state.clear()
 
+@router.callback_query(F.data == "admin_add_hw")
+async def admin_choose_subject_hw(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: return
+    await callback.message.answer("Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("edit_hw"))
+    await callback.answer()
+
+# 🚨 ОБРОБКА ІНДЕКСУ ЗМІНИ ДЗ
+@router.callback_query(F.data.startswith("edit_hw_"))
+async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
+    data_parts = callback.data.split("_")
+    subject = data_parts[2] if len(data_parts) > 2 else ""
+    await state.update_data(chosen_subject=subject)
+    await callback.message.answer(f"Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
+    await state.set_state(BotStates.waiting_for_hw_text)
+    await callback.answer()
+
+@router.message(BotStates.waiting_for_hw_text)
+async def admin_save_hw_text(message: Message, state: FSMContext):
+    global HOMEWORK_DATA
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: return
+    data = await state.get_data()
+    subject = data.get("chosen_subject")
+    HOMEWORK_DATA[subject] = message.text
+    await message.answer(f"✅ ДЗ для {SUBJECT_NAMES.get(subject, 'Предмет')} успішно оновлено!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_edit_sch")
+async def admin_choose_day_sch(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    await callback.message.answer("Оберіть день для зміни розкладу:", reply_markup=get_days_menu("edit_sch"))
+    await callback.answer()
+
+# 🚨 ОБРОБКА ІНДЕКСУ ЗМІНИ РОЗКЛАДУ
+@router.callback_query(F.data.startswith("edit_sch_"))
+async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
+    data_parts = callback.data.split("_")
+    day = data_parts[2] if len(data_parts) > 2 else ""
+    await state.update_data(chosen_day=day)
+    await callback.message.answer(f"Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
+    await state.set_state(BotStates.waiting_for_schedule_text)
+    await callback.answer()
+
+@router.message(BotStates.waiting_for_schedule_text)
+async def admin_save_sch_text(message: Message, state: FSMContext):
+    global SCHEDULE_DATA
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    data = await state.get_data()
+    day = data.get("chosen_day")
+    SCHEDULE_DATA[day] = message.text
+    await message.answer(f"✅ Розклад на {DAY_NAMES.get(day, 'День')} успішно змінено!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_add_important")
+async def admin_input_important(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    await callback.message.answer("Введіть текст нового важливого оголошення:")
+    await state.set_state(BotStates.waiting_for_important_text)
+    await callback.answer()
+
+@router.message(BotStates.waiting_for_important_text)
+async def admin_save_important(message: Message, state: FSMContext):
+    global IMPORTANT_ANNOUNCEMENT
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    IMPORTANT_ANNOUNCEMENT = message.text
+    await message.answer("✅ Важливе оголошення оновлено для всього класу!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_edit_books")
+async def admin_input_books(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    await callback.message.answer("Введіть новий список книг / посилань:")
+    await state.set_state(BotStates.waiting_for_books_text)
+    await callback.answer()
+
+@router.message(BotStates.waiting_for_books_text)
+async def admin_save_books(message: Message, state: FSMContext):
+    global BOOKS_DATA
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    BOOKS_DATA = message.text
+    await message.answer("✅ Список книг успішно оновлено!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_config_random")
+async def admin_config_random_mode(callback: CallbackQuery):
+    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in ADMIN_L4_IDS: return
+    menu = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🎲 Смайл кубика (Dice)", callback_data="set_rand_dice")],
+        [InlineKeyboardButton(text="👥 Випадкове ім'я учня", callback_data="set_rand_name")]
+    ])
+    await callback.message.answer("Оберіть режим роботи кнопки Рандом:", reply_markup=menu)
+    await callback.answer()
+
+# 🚨 ОБРОБКА ІНДЕКСУ РЕЖИМУ РАНДОМУ
+@router.callback_query(F.data.startswith("set_rand_"))
+async def admin_set_random_mode(callback: CallbackQuery):
+    global RANDOM_MODE
+    if callback.from_user.id not in SUPER_ADMIN_IDS and callback.from_user.id not in ADMIN_L4_IDS: return
+    data_parts = callback.data.split("_")
+    mode = data_parts[2] if len(data_parts) > 2 else "dice"
+    RANDOM_MODE = mode
+    mode_text = "Кубик (Dice)" if mode == "dice" else "Вибір учня зі списку"
+    await callback.message.answer(f"✅ Режим рандому змінено на: **{mode_text}**")
+    await callback.answer()
+
+@router.callback_query(F.data == "admin_mark_attendance")
+async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    await callback.message.answer("📝 Введіть прізвища або імена учнів, які сьогодні відсутні (через кому або з нового рядка):")
+    await state.set_state(BotStates.waiting_for_absence_info)
+    await callback.answer()
+
+@router.message(BotStates.waiting_for_absence_info)
+async def admin_save_attendance(message: Message, state: FSMContext):
+    global ABSENT_TODAY_LIST
+    user_id = message.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    text = message.text.replace("\n", ",")
+    ABSENT_TODAY_LIST = [name.strip() for name in text.split(",") if name.strip()]
+    if ABSENT_TODAY_LIST:
+        formatted = "\n".join([f"• {n}" for n in ABSENT_TODAY_LIST])
+        await message.answer(f"✅ Список збережено (Всього: {len(ABSENT_TODAY_LIST)}):\n{formatted}")
+    else: await message.answer("⚠️ Список порожній.")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_send_report")
+async def admin_send_report_to_teacher(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    
+    if not ABSENT_TODAY_LIST:
+        await callback.message.answer("⚠️ Список відсутніх порожній!")
+        await callback.answer()
+        return
+        
+    formatted = "\n".join([f"• {name}" for name in ABSENT_TODAY_LIST])
+    report_text = f"📢 **Щоденний звіт про відсутніх учнів**\n\nУчнів, яких сьогодні немає:\n{formatted}\n\nВсього відсутніх: {len(ABSENT_TODAY_LIST)}"
+    
+    # 👑 ЗВІТ ЛЕТИТЬ НАПРЯМУ ВЧИТЕЛЬЦІ В ЛС
+    target_chat_id = TEACHER_CHAT_ID if TEACHER_CHAT_ID else 8791830931
+    status_msg = "в особисті повідомлення Класному Керівнику!" if TEACHER_CHAT_ID else "вам ЛС (Вчителька ще не активувала бота)."
+    
+    try:
+        await bot.send_message(chat_id=target_chat_id, text=report_text)
+        await callback.message.answer(f"🚀 Звіт успішно надіслано {status_msg}")
+    except Exception: 
+        await callback.message.answer(f"❌ Помилка відправки! Перевірте статус підключення.")
+    await callback.answer()
 
 # ==========================================
 # 🚀 АВТОПІНГ ДЛЯ ЗАХИСТУ ВІД СНУ (RENDER)
@@ -657,7 +813,7 @@ async def self_ping_task():
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, timeout=10) as response:
-                    print(f"⏰ [Принт кожні 10 хв] Автопінг відправлено! Статус сервера Render: {response.status}")
+                    print(f"⏰ Автопінг відправлено! Статус Render: {response.status}")
         except Exception as e: print(f"❌ Помилка автопінгу: {e}")
         await asyncio.sleep(600)
 
@@ -683,13 +839,11 @@ async def main():
 
     print(" Bot polling started...")
     
-    # 🚨 ЖЕСТКИЙ ФИКС КОНФЛИКТА ТОКЕНА
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        print("⏳ Очищення сесій... Чекаємо 10 секунд для скидання конфлікту токена...")
+        print(" Checking sessions...")
         await asyncio.sleep(10)
-    except Exception as e:
-        print(f"Пропуск очищення сесії: {e}")
+    except Exception as e: print(f"Пропуск очищення сесії: {e}")
 
     try: await dp.start_polling(bot)
     finally: await bot.session.close()
