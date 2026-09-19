@@ -1173,7 +1173,7 @@ async def main():
     
     restore_homework_from_file()
     
-    # Реєструємо функцію встановлення вебхука при старті сервера
+     # Реєструємо функцію встановлення вебхука при старті сервера
     await on_startup(bot)
     
     port = int(os.getenv("PORT", 8080))
@@ -1183,7 +1183,9 @@ async def main():
     await site.start()
     
     print(f"🚀 Сервер v2.4 успішно запустился на порту {port}!")
-    await asyncio.Event().wait()
+    
+    # 🚨 ВЕЧНИЙ СОН БЕЗ БЛОКУВАННЯ ПОТОКУ RENDER
+    await asyncio.sleep(3600 * 24 * 365)
 
 if __name__ == "__main__":
     asyncio.run(main())
