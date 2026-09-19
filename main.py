@@ -1149,10 +1149,73 @@ async def main():
     print("🚀 Бот для 7-В класу запускає стабільний полінг...")
     
     try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=10) as response:
+                print(f"⏰ Автопінг Render: {response.status}")
+    except Exception: pass
+    await asyncio.sleep(600)
+
+async def cron_secret_agent_picker():
+    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
+    while True:
+        await asyncio.sleep(3600 * 24)
+        if USER_USERNAMES:
+            all_chat_users = list(USER_USERNAMES.values())
+            CURRENT_SECRET_AGENT_ID = random.choice(all_chat_users)
+            AGENT_HAS_SENT_SECRET = False
+            try:
+                await bot.send_message(
+                    chat_id=CURRENT_SECRET_AGENT_ID,
+                    text="🤫 **УВАГА! Нова доба настала!**\n\nТебе обрано **Таємним Шпигуном 7-В класу** на сьогодні! У твоєму меню з'явилась кнопка `🤫 Секретний Злив`."
+                )
+            except Exception: pass
+
+def restore_homework_from_file():
+    global HOMEWORK_DATA
+    try:
+        if os.path.exists("homework.json"):
+            with open("homework.json", "r", encoding="utf-8") as f:
+                HOMEWORK_DATA = json.load(f)
+            print("📦 Базу ДЗ успішно відновлено з файлу homework.json!")
+        else:
+            print("ℹ️ Файл бекапу ДЗ не знайдено, запущено чисту базу.")
+    except Exception as e:
+        print(f"❌ Помилка відновлення бекапу ДЗ: {e}")
+
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    dp.include_router(router)
+    
+    app = web.Application()
+    app.router.add_get("/", handle_render_hc)
+    
+    port = int(os.getenv("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"🌐 Безкоштовний веб-сервер успішно запущено на порту {port}!")
+
+    asyncio.create_task(self_ping_task())
+    asyncio.create_task(cron_secret_agent_picker())
+    
+    restore_homework_from_file()
+    
+    print("🚀 Бот для 7-В класу запускає стабільний полінг...")
+    
+    try:
         await bot.delete_webhook(drop_pending_updates=True)
-        await dp.start_polling(bot)
+        # 🚨 СУПЕР-ЗАПУСК ВЕБХУКА: Рендер моментально получит нужный ответ!
+        await dp.start_webhook(
+            bot=bot,
+            webhook_path="/webhook",
+            on_startup=None,
+            handle_signals=False,
+            web_app=app
+        )
     finally:
         await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
+
