@@ -56,12 +56,12 @@ RANDOM_MODE = "dice"
 
 # 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ
 RANDOM_NAMES = [
-    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
+    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковальвчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
     "Маргарита", "Ангеліна", "Нікіта", "Альберт", "Єва", "Роман", "Владислав", 
     "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Макс"
 ]
-USER_ACHIEVEMENTS = {name: ["🥇 Перший запуск бота", "🥈 Активний учень 7 класу"] for name in RANDOM_NAMES}
+USER_ACHIEVEMENTS = {name: ["🥈 Активний учень 7 класу"] for name in RANDOM_NAMES}
 
 # База ніків однокласників зі скриншота
 USER_USERNAMES_TEXT = {
@@ -478,7 +478,6 @@ async def handle_admin_panel(message: Message):
         await message.answer(text="🛠️ **Вітаємо в панелі адміністратора. Доступні функції згідно з вашим рівнем прав:**", reply_markup=get_admin_menu_keyboard(user_id))
     else:
         await message.answer("🛑 У вас немає доступу до цієї команди.")
-
 # ==========================================
 # 🛠️ АДМІНІСТРАТИВНА ПАНЕЛЬ ТА КЕРУВАННЯ
 # ==========================================
@@ -499,33 +498,49 @@ async def admin_panel(message: Message):
     else:
         await message.answer("🛑 У вас немає доступу до цієї команди.")
 
-# 🚨 ОБРОБКА МУТУ ТА БАНУ З ЧАТЛОГІВ
-@router.callback_query(F.data.startswith("mute_15_") | F.data.startswith("ban_"))
-async def process_chat_punishment(callback: CallbackQuery):
+# 🚨 ТОЧНИЙ ФІКС МУТУ (Більше не перехоплює інші адмін-кнопки!)
+@router.callback_query(F.data.startswith("mute_15_"))
+async def process_chat_mute(callback: CallbackQuery):
     admin_id = callback.from_user.id
-    
-    all_admins = []
-    for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS]:
-        if s: all_admins.extend(s)
-        
+    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
     if admin_id not in all_admins and admin_id != TEACHER_CHAT_ID and admin_id != 8791830931: return
 
-    data_parts = callback.data.split("_")
-    action = data_parts
+    raw_data = callback.data.replace("mute_15_", "")
+    data_parts = raw_data.split("_")
+    if len(data_parts) < 2: return
     
-    if action == "mute":
-        target_id = int(data_parts)
-        target_name = data_parts
-        MUTED_USERS[target_id] = datetime.now().timestamp() + 900
-        alert_text = f"🤫 **Користувач {target_name} замучений на 15 хв за порушення правил чату!**"
-    else:
-        target_id = int(data_parts)
-        target_name = data_parts
-        if target_id not in BANNED_USERS: BANNED_USERS.append(target_id)
-        alert_text = f"🛑 **Користувач {target_name} назавжди забанений у чаті класу!**"
+    target_id = int(data_parts[0])
+    target_name = data_parts[1]
+    
+    MUTED_USERS[target_id] = datetime.now().timestamp() + 900
+    alert_text = f"🤫 **Користувач {target_name} замучений на 15 хв за порушення правил чату!**"
 
-    for user_id in list(CHAT_REGISTERED_USERS.keys()):
-        try: await bot.send_message(chat_id=user_id, text=alert_text)
+    for u_id in list(CHAT_REGISTERED_USERS.keys()):
+        try: await bot.send_message(chat_id=u_id, text=alert_text)
+        except Exception: pass
+
+    await callback.message.edit_text(text=f"✅ Покарання успішно застосовано!\n{alert_text}")
+    await callback.answer()
+
+# 🚨 ТОЧНИЙ ФІКС БАНУ (Працює точково!)
+@router.callback_query(F.data.startswith("ban_"))
+async def process_chat_ban(callback: CallbackQuery):
+    admin_id = callback.from_user.id
+    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    if admin_id not in all_admins and admin_id != TEACHER_CHAT_ID and admin_id != 8791830931: return
+
+    raw_data = callback.data.replace("ban_", "")
+    data_parts = raw_data.split("_")
+    if len(data_parts) < 2: return
+    
+    target_id = int(data_parts[0])
+    target_name = data_parts[1]
+    
+    if target_id not in BANNED_USERS: BANNED_USERS.append(target_id)
+    alert_text = f"🛑 **Користувач {target_name} назавжди забанений у чаті класу!**"
+
+    for u_id in list(CHAT_REGISTERED_USERS.keys()):
+        try: await bot.send_message(chat_id=u_id, text=alert_text)
         except Exception: pass
 
     await callback.message.edit_text(text=f"✅ Покарання успішно застосовано!\n{alert_text}")
@@ -537,7 +552,6 @@ async def admin_start_give_level(callback: CallbackQuery):
     user_id = callback.from_user.id
     if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
     
-    # Виводимо список усіх 28 учнів кнопками
     buttons = [[InlineKeyboardButton(text=name, callback_data=f"lvluser_{name}")] for name in RANDOM_NAMES]
     await callback.message.answer("👥 **Оберіть учня для керування рівнем доступу:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await callback.answer()
@@ -550,9 +564,7 @@ def get_user_current_level(name: str) -> int:
             target_username = username
             break
             
-    if not target_username:
-        return 0
-        
+    if not target_username: return 0
     if target_username in ADMIN_L4_USERNAMES: return 4
     if target_username in MODERATOR_USERNAMES: return 3
     if target_username in STAROSTA_USERNAMES: return 2
@@ -583,9 +595,7 @@ async def process_level_user_card(callback: CallbackQuery):
     ]
     
     await callback.message.edit_text(
-        text=f"🪪 **Картка керування правами**\n\n"
-             f"👤 **Учень:** {name}\n"
-             f"📊 **Поточний статус:** {level_names.get(current_lvl)}",
+        text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {name}\n📊 **Поточний статус:** {level_names.get(current_lvl)}",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons)
     )
     await callback.answer()
@@ -702,6 +712,7 @@ async def admin_save_user_achievement(message: Message, state: FSMContext):
     else: USER_ACHIEVEMENTS[name] = [message.text]
     await message.answer(f"✅ Досягнення для **{name}** успішно додано!")
     await state.clear()
+
 
 # ==========================================
 # 🚀 АВТОПІНГ ДЛЯ ЗАХИСТУ ВІД СНУ (RENDER)
