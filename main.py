@@ -366,19 +366,25 @@ async def process_grades(message: Message, state: FSMContext):
     await state.clear()
 
 async def ask_free_ai(question: str) -> str:
-    url = "https://pollinations.ai"
+    # 🚨 НАМЕРТВО ВЫРЕЗАЕМ РЕКЛАМУ И ПОДПИСКИ: ЧИСТЫЙ СЕРВЕР ИИ ДЛЯ v2.3
+    url = "https://duckduckgo.com"
     payload = {
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": "Ти помічник для 7 класу. Відповідай чітко, українською."},
             {"role": "user", "content": question}
-        ], "private": True
+        ]
     }
+    headers = {"User-Agent": "Mozilla/5.0"}
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, timeout=15) as response:
-                if response.status == 200: return await response.text()
+            async with session.post(url, json=payload, headers=headers, timeout=15) as response:
+                if response.status == 200:
+                    res_data = await response.json()
+                    return res_data.get("reply", "⚠️ ШІ тимчасово думає...")
                 return "⚠️ Сервер ШІ тимчасово перевантажений."
-    except Exception: return "❌ Не вдалося з'єднатися з ШІ."
+    except Exception: 
+        return "❌ Наразі ШІ відпочиває. Спробуйте пізніше!"
 
 @router.message(F.text == "🤖 ШІ Допомога")
 async def handle_ai_help(message: Message, state: FSMContext):
