@@ -21,7 +21,7 @@ from aiohttp import web
 BOT_TOKEN = "8735817305:AAG-F0qhTrCmbase2GtQcDtkBZV2o1fTceg"
 
 # 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
-SUPER_ADMIN_IDS =
+SUPER_ADMIN_IDS = [8791830931]
 
 # 🪪 СИСТЕМА ДИНАМІЧНИХ ПРАВ ПО ЮЗЕРНЕЙМАХ (КЕРУЄТЬСЯ З АДМІНКИ)
 ADMIN_L4_USERNAMES = ["@пример_админа_л4"]  # Рівень 4: Головні Адміністратори
