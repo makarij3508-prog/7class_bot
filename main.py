@@ -1182,40 +1182,42 @@ def restore_homework_from_file():
     except Exception as e:
         print(f"❌ Помилка відновлення бекапу ДЗ: {e}")
 
-async def main():
-    logging.basicConfig(level=logging.INFO)
-    dp.include_router(router)
-    
+async def run_web_server():
+    # Окремий запуск веб-сервера для Render
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
-    
     port = int(os.getenv("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"🌐 Безкоштовний веб-сервер успішно запущено на порту {port}!")
+    # Тримаємо сервер активним
+    while True:
+        await asyncio.sleep(3600)
 
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    dp.include_router(router)
+    
+    # Запускаємо фонові таймери захисту від сну та Шпигуна
     asyncio.create_task(self_ping_task())
     asyncio.create_task(cron_secret_agent_picker())
     
+    # Відновлюємо базу ДЗ з файлу
     restore_homework_from_file()
     
     print("🚀 Бот для 7-В класу запускає стабільний полінг...")
     
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        # 🚨 СУПЕР-ЗАПУСК ВЕБХУКА: Рендер моментально получит нужный ответ!
-        await dp.start_webhook(
-            bot=bot,
-            webhook_path="/webhook",
-            on_startup=None,
-            handle_signals=False,
-            web_app=app
+        # ⚡ ПАРАЛЕЛЬНИЙ ЗАПУСК: Веб-сервер та Полінг працюють одночасно без блокування!
+        await asyncio.gather(
+            run_web_server(),
+            dp.start_polling(bot)
         )
     finally:
         await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
-
