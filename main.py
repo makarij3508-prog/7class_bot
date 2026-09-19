@@ -676,7 +676,7 @@ async def process_open_shop(callback: CallbackQuery):
         [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")],
         [InlineKeyboardButton(text="🛡️ Анти-Мут (100 Сімок)", callback_data="buy_antimut")],
         [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="profile_changelog")]
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_setting")]
     ]
     
     await callback.message.edit_text(
