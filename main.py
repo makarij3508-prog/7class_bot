@@ -17,7 +17,7 @@ from aiohttp import web
 # ==========================================
 
 # 🔌 ТОКЕН ТВОГО БОТА
-BOT_TOKEN = "8735817305:AAGSh53VV7GvWpDGA0XAE8IkklyoQ8ebivo"
+BOT_TOKEN = "8735817305:AAG-F0qhTrCmbase2GtQcDtkBZV2o1fTceg"
 
 # 👑 ТВІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
 SUPER_ADMIN_IDS = [8791830931]
