@@ -151,8 +151,7 @@ dp = Dispatcher()
 router = Router()
 
 # Хендлер для проходження перевірки працездатності (Health Check) на Render
-async def handle_render_hc(request):
-    return web.Response(text="OK")
+
 
 # ==========================================
 # 🎹 ГЕНЕРАТОРИ ГОЛОВНИХ ТА АДМІН-МЕНЮ БОТА
@@ -1104,14 +1103,18 @@ async def process_back_to_settings_callback(callback: CallbackQuery):
     )
 
 # ==========================================
-# 🚀 ОФІЦІЙНИЙ СТАБІЛЬНИЙ ЗАПУСК СИСТЕМИ ДЛЯ RENDER
+# 🚀 ОФІЦІЙНИЙ БЕЗКОШТОВНИЙ ЗАПУСК ДЛЯ RENDER (v2.4)
 # ==========================================
+
+async def handle_render_hc(request):
+    # 🚨 ЖЕСТКИЙ ФІКС: Віддаємо статус 200 OK для безкоштовного Web Service
+    return web.Response(text="OK")
 
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
     
-    # 🌐 СТВОРЮЄМО НЕЗАЛЕЖНИЙ ВЕБ-СЕРВЕР ДЛЯ RENDER (ГАРАНТІЯ СТАТУСУ 200 OK)
+    # Створюємо веб-сервер, який вимагає Render на порту 8080
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
     
@@ -1120,21 +1123,19 @@ async def main():
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    print(f"🌐 Веб-сервер успішно запущено на порту {port}!")
+    print(f"🌐 Безкоштовний веб-сервер успішно запущено на порту {port}!")
 
-    # ⏰ Запускаємо фонові таймери захисту від сну та Шпигуна
+    # Фонової таймери захисту від сну та Шпигуна
     asyncio.create_task(self_ping_task())
     asyncio.create_task(cron_secret_agent_picker())
     
-    # 📦 Відновлюємо базу ДЗ з файлу
+    # Відновлюємо базу ДЗ з файлу
     restore_homework_from_file()
     
-    print("🚀 Бот для 7-В класу запускає повний полінг...")
+    print("🚀 Бот для 7-В класу запускає стабільний полінг...")
     
     try:
-        # Скидаємо старі завислі вебхуки, щоб не блокували потік
         await bot.delete_webhook(drop_pending_updates=True)
-        # ⚡ Включаємо чистий стабільний полінг
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
