@@ -895,23 +895,25 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     await callback.answer()
 
 # ==========================================
-# 📝 АДМІН-ХЕНДЛЕРИ КОНТЕНТУ (ЗБЕРЕЖЕННЯ ДЗ ТА РОЗКЛАДУ)
+# 📝 АДМІН-ХЕНДЛЕРИ КОНТЕНТУ (100% ФІКС ЧАСИКІВ)
 # ==========================================
 
 @router.callback_query(F.data == "admin_add_hw")
 async def admin_choose_subject_hw(callback: CallbackQuery):
     user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: return
-    await callback.message.answer("Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("edit_hw"))
-    await callback.answer()
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS and user_id not in HW_ASSISTANT_IDS: 
+        await callback.answer("🛑 У вас немає доступу!", show_alert=True)
+        return
+    await callback.answer() 
+    await callback.message.edit_text(text="Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("ehw"))
 
-@router.callback_query(F.data.startswith("edit_hw_"))
+@router.callback_query(F.data.startswith("ehw_"))
 async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
-    subject = callback.data.replace("edit_hw_", "")
+    await callback.answer() 
+    subject = callback.data.replace("ehw_", "")
     await state.update_data(chosen_subject=subject)
-    await callback.message.answer(f"Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
+    await callback.message.edit_text(text=f"📝 Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
     await state.set_state(BotStates.waiting_for_hw_text)
-    await callback.answer()
 
 @router.message(BotStates.waiting_for_hw_text)
 async def admin_save_hw_text(message: Message, state: FSMContext):
@@ -927,17 +929,19 @@ async def admin_save_hw_text(message: Message, state: FSMContext):
 @router.callback_query(F.data == "admin_edit_sch")
 async def admin_choose_day_sch(callback: CallbackQuery):
     user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
-    await callback.message.answer("Оберіть день для зміни розкладу:", reply_markup=get_days_menu("edit_sch"))
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: 
+        await callback.answer("🛑 У вас немає доступу!", show_alert=True)
+        return
     await callback.answer()
+    await callback.message.edit_text(text="Оберіть день для зміни розкладу:", reply_markup=get_days_menu("esch"))
 
-@router.callback_query(F.data.startswith("edit_sch_"))
+@router.callback_query(F.data.startswith("esch_"))
 async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
-    day = callback.data.replace("edit_sch_", "")
-    await state.update_data(chosen_day=day)
-    await callback.message.answer(f"Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
-    await state.set_state(BotStates.waiting_for_schedule_text)
     await callback.answer()
+    day = callback.data.replace("esch_", "")
+    await state.update_data(chosen_day=day)
+    await callback.message.edit_text(text=f"🗓️ Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
+    await state.set_state(BotStates.waiting_for_schedule_text)
 
 @router.message(BotStates.waiting_for_schedule_text)
 async def admin_save_sch_text(message: Message, state: FSMContext):
@@ -1024,10 +1028,7 @@ async def admin_send_report_to_teacher(callback: CallbackQuery):
     except Exception: await callback.message.answer(f"❌ Помилка відправки!")
     await callback.answer()
 
-        except Exception as e: print(f"❌ Помилка автопінгу: {e}")
-        await asyncio.sleep(600)
-
-# 🚨 ВСТАВЛЯЙ ЦЕЙ ШМАТОК СЮДИ, СТРОГО МІЖ НИМИ 👇
+# 🚨 ТОЧНИЙ ФІКС ПОВЕРНЕННЯ НАЗАД (БЕЗ ОПЕЧАТОК ТА З РОЗУМНИМИ ВІДСТУПАМИ)
 @router.callback_query(F.data == "economy_back_to_settings")
 async def process_back_to_settings_callback(callback: CallbackQuery):
     await callback.answer()
@@ -1035,14 +1036,6 @@ async def process_back_to_settings_callback(callback: CallbackQuery):
         text="⚙️ Налаштування та інтерактив:",
         reply_markup=settings_interactive_menu
     )
-# 👆 КІНЕЦЬ ВСТАВКИ
-
-# ==========================================
-# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
-# ==========================================
-async def main():
-    logging.basicConfig(level=logging.INFO)
-    dp.include_router(router)
 
 # ==========================================
 # 🚀 ТАЙМЕРИ ТА ЗАПУСК СЕРВЕРА RENDER ДЛЯ v2.3
@@ -1102,5 +1095,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
