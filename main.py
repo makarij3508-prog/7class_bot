@@ -1104,88 +1104,40 @@ async def process_back_to_settings_callback(callback: CallbackQuery):
     )
 
 # ==========================================
-# 🚀 ТАЙМЕРИ ТА ЗАПУСК СЕРВЕРА RENDER ДЛЯ v2.4
+# 🚀 ОФІЦІЙНИЙ СТАБІЛЬНИЙ ЗАПУСК СИСТЕМИ ДЛЯ RENDER
 # ==========================================
-
-async def self_ping_task():
-    url = os.getenv("RENDER_EXTERNAL_URL")
-    if not url: return
-    print(f"🚀 Система захисту від сну запустилась...")
-    await asyncio.sleep(60)
-    while True:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=10) as response:
-                    print(f"⏰ Автопінг Render: {response.status}")
-        except Exception: pass
-        await asyncio.sleep(600)
-
-async def cron_secret_agent_picker():
-    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
-    while True:
-        await asyncio.sleep(3600 * 24)
-        if USER_USERNAMES:
-            all_chat_users = list(USER_USERNAMES.values())
-            CURRENT_SECRET_AGENT_ID = random.choice(all_chat_users)
-            AGENT_HAS_SENT_SECRET = False
-            try:
-                await bot.send_message(
-                    chat_id=CURRENT_SECRET_AGENT_ID,
-                    text="🤫 **УВАГА! Нова доба настала!**\n\nТебе обрано **Таємним Шпигуном 7-В класу** на сьогодні! У твоєму меню з'явилась кнопка `🤫 Секретний Злив`."
-                )
-            except Exception: pass
-
-def restore_homework_from_file():
-    global HOMEWORK_DATA
-    try:
-        if os.path.exists("homework.json"):
-            with open("homework.json", "r", encoding="utf-8") as f:
-                HOMEWORK_DATA = json.load(f)
-            print("📦 Базу ДЗ успішно відновлено з файлу homework.json!")
-        else:
-            print("ℹ️ Файл бекапу ДЗ не знайдено, запущено чисту базу.")
-    except Exception as e:
-        print(f"❌ Помилка відновлення бекапу ДЗ: {e}")
-
-async def on_startup(bot: Bot):
-    url = os.getenv("RENDER_EXTERNAL_URL")
-    if url:
-        webhook_url = f"{url.rstrip('/')}/webhook"
-        await bot.set_webhook(webhook_url, drop_pending_updates=True)
-        print(f"🌐 Webhook successfully set to: {webhook_url}")
-    else:
-        print("⚠️ RENDER_EXTERNAL_URL is empty, webhook not set.")
 
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
     
+    # 🌐 СТВОРЮЄМО НЕЗАЛЕЖНИЙ ВЕБ-СЕРВЕР ДЛЯ RENDER (ГАРАНТІЯ СТАТУСУ 200 OK)
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
-    
-    from aiogram.webhook.aiohttp_handler import SimpleRequestHandler, setup_application
-    webhook_handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
-    webhook_handler.register(app, path="/webhook")
-    setup_application(app, dp, bot=bot)
-    
-    asyncio.create_task(self_ping_task())
-    asyncio.create_task(cron_secret_agent_picker())
-    
-    restore_homework_from_file()
-    
-     # Реєструємо функцію встановлення вебхука при старті сервера
-    await on_startup(bot)
     
     port = int(os.getenv("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
+    print(f"🌐 Веб-сервер успішно запущено на порту {port}!")
+
+    # ⏰ Запускаємо фонові таймери захисту від сну та Шпигуна
+    asyncio.create_task(self_ping_task())
+    asyncio.create_task(cron_secret_agent_picker())
     
-    print(f"🚀 Сервер v2.4 успішно запустился на порту {port}!")
+    # 📦 Відновлюємо базу ДЗ з файлу
+    restore_homework_from_file()
     
-    # 🚨 ВЕЧНИЙ СОН БЕЗ БЛОКУВАННЯ ПОТОКУ RENDER
-    await asyncio.sleep(3600 * 24 * 365)
+    print("🚀 Бот для 7-В класу запускає повний полінг...")
+    
+    try:
+        # Скидаємо старі завислі вебхуки, щоб не блокували потік
+        await bot.delete_webhook(drop_pending_updates=True)
+        # ⚡ Включаємо чистий стабільний полінг
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
