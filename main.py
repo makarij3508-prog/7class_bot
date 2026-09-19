@@ -757,7 +757,8 @@ async def process_open_stocks(callback: CallbackQuery):
         [InlineKeyboardButton(text=f"🏃 Акції Фізкультури — {price_fizra} Сімок", callback_data=f"stock_buy_fizra_{price_fizra}")],
         [InlineKeyboardButton(text=f"🤖 Акції ШІ-Помічника — {price_ai} Сімок", callback_data=f"stock_buy_ai_{price_ai}")],
         [InlineKeyboardButton(text=f"🔄 Оновити курс акцій", callback_data="economy_open_stocks")],
-        [InlineKeyboardButton(text=f"🔙 Назад", callback_data="profile_changelog")]
+       [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
+
     ]
     
     await callback.message.edit_text(
@@ -1022,6 +1023,26 @@ async def admin_send_report_to_teacher(callback: CallbackQuery):
         await callback.message.answer(f"🚀 Звіт успішно надіслано {status_msg}")
     except Exception: await callback.message.answer(f"❌ Помилка відправки!")
     await callback.answer()
+
+        except Exception as e: print(f"❌ Помилка автопінгу: {e}")
+        await asyncio.sleep(600)
+
+# 🚨 ВСТАВЛЯЙ ЦЕЙ ШМАТОК СЮДИ, СТРОГО МІЖ НИМИ 👇
+@router.callback_query(F.data == "economy_back_to_settings")
+async def process_back_to_settings_callback(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.edit_text(
+        text="⚙️ Налаштування та інтерактив:",
+        reply_markup=settings_interactive_menu
+    )
+# 👆 КІНЕЦЬ ВСТАВКИ
+
+# ==========================================
+# 🚀 ЗАПУСК БОТА ТА ВЕБ-СЕРВЕРА ДЛЯ RENDER
+# ==========================================
+async def main():
+    logging.basicConfig(level=logging.INFO)
+    dp.include_router(router)
 
 # ==========================================
 # 🚀 ТАЙМЕРИ ТА ЗАПУСК СЕРВЕРА RENDER ДЛЯ v2.3
