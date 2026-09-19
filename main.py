@@ -142,7 +142,6 @@ class BotStates(StatesGroup):
     admin_input_username_for_level = State() # Ввід ніка для рівнів доступу
     admin_choosing_ach_to_delete = State()   # Стан для видалення конкретної медалі учня
     user_in_chat_window = State()           # Користувач знаходиться всередині чату
-    # 🚨 НОВІ СТАНІ ЕКОНОМІКИ v2.3
     waiting_for_secret_text = State()       # Ввід анонімного тексту Таємним Шпигуном
     waiting_for_custom_tag = State()        # Ввід власного тексту для купівлі тегу
 
@@ -168,41 +167,31 @@ def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
         [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
     ]
     
-    # 🎭 Якщо цей користувач сьогодні обраний Таємним Шпигуном — виводимо йому секретну кнопку!
     if user_id == CURRENT_SECRET_AGENT_ID and not AGENT_HAS_SENT_SECRET:
         buttons.insert(2, [KeyboardButton(text="🤫 Секретний Злив")])
         
     all_protected_ids = []
     for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
-        if s: 
-            all_protected_ids.extend(s)
+        if s: all_protected_ids.extend(s)
             
     if (user_id == 8791830931 or user_id in all_protected_ids or user_id == TEACHER_CHAT_ID):
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
         
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-def get_ai_mode_menu() -> ReplyKeyboardMarkup:
-    """Кнопка виходу з інтерактивного сеансу зі штучним інтелектом"""
-    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
-
-def get_chat_exit_menu() -> ReplyKeyboardMarkup:
-    """Кнопка для безпечного виходу із закритої кімнати чату класу"""
-    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
+def get_ai_mode_menu() -> ReplyKeyboardMarkup: return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
+def get_chat_exit_menu() -> ReplyKeyboardMarkup: return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
-    """Генерація інлайн-списку предметів для перегляду або редагування"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📐 Алгебра", callback_data=f"{prefix}_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data=f"{prefix}_geometry")],
         [InlineKeyboardButton(text="🧲 Фізика", callback_data=f"{prefix}_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data=f"{prefix}_chemistry")],
         [InlineKeyboardButton(text="🧬 Біологія", callback_data=f"{prefix}_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data=f"{prefix}_geography")],
-        [InlineKeyboardButton(text="📜 Історія Укр.", callback_data=f"{prefix}_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня iст.", callback_data=f"{prefix}_hist_world")],
         [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data=f"{prefix}_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data=f"{prefix}_lit_ua")],
         [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data=f"{prefix}_english"), InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf")]
     ])
 
 def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
-    """Генерація інлайн-кнопок днів тижня для розкладу уроків"""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Понеділок", callback_data=f"{prefix}_mon"), InlineKeyboardButton(text="Вівторок", callback_data=f"{prefix}_tue")],
         [InlineKeyboardButton(text="Середа", callback_data=f"{prefix}_wed"), InlineKeyboardButton(text="Четвер", callback_data=f"{prefix}_thu")],
@@ -210,33 +199,24 @@ def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
     ])
 
 def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
-    """Жорсткий розподіл інлайн-кнопок всередині адмінки згідно з рівнем прав"""
     keyboard = []
-    
     if user_id in HW_ASSISTANT_IDS or user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="📝 Змінити ДЗ", callback_data="admin_add_hw")])
-        
     if user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="🗓️ Змінити Розклад", callback_data="admin_edit_sch")])
-        
     if user_id in STAROSTA_IDS or user_id in ADMIN_L4_IDS or user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="👥 Відмітити відсутнього", callback_data="admin_mark_attendance"), 
                          InlineKeyboardButton(text="📢 Надіслати звіт вчителю", callback_data="admin_send_report")])
-        
     if user_id in ADMIN_L4_IDS or user_id == 8791830931 or user_id == TEACHER_CHAT_ID:
         keyboard.append([InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), 
                          InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")])
-        
     if user_id in ADMIN_L4_IDS or user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu"),
                          InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
-        
     if user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
-        
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
-# 🪙 ОНОВЛЕНЕ ІНТЕРАКТИВНЕ МЕНЮ З СІМКАМИ ТА МАГАЗИНОМ ЛУТУ
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
     [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
@@ -245,6 +225,7 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
+    # 🚨 ЧИСТАЯ ФУНКЦИЯ: Никаких проверок левых каналов!
     return await message.answer(text, reply_markup=reply_markup)
 
 # ==========================================
