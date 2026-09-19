@@ -1107,8 +1107,22 @@ async def process_back_to_settings_callback(callback: CallbackQuery):
 # ==========================================
 
 async def handle_render_hc(request):
-    # 🚨 ЖЕСТКИЙ ФІКС: Віддаємо статус 200 OK для безкоштовного Web Service
+    # Віддаємо статус 200 OK для безкоштовного Web Service
     return web.Response(text="OK")
+
+async def self_ping_task():
+    # 🚨 ЖЕСТКИЙ ФІКС: Прямо тут оголошуємо пінг, щоб не було NameError!
+    url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url: return
+    print(f"🚀 Система захисту від сну запустилась...")
+    await asyncio.sleep(60)
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as response:
+                    print(f"⏰ Автопінг Render: {response.status}")
+        except Exception: pass
+        await asyncio.sleep(600)
 
 async def main():
     logging.basicConfig(level=logging.INFO)
