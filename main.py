@@ -26,7 +26,7 @@ ASSISTANT_USERNAMES = []                     # Помічники по ДЗ (Р�
 TESTER_USERNAMES = []                        # Тестувальники
 
 # 👑 ЮЗЕРНЕЙМ КЛАСНОГО КЕРІВНИКА
-TEACHER_USERNAME = "@пример_учителя"
+TEACHER_USERNAME = "@victoria197198"
 
 # 📊 Внутрішні динамічні списки ID
 ADMIN_L4_IDS = []
