@@ -338,7 +338,7 @@ async def handle_show_books(message: Message):
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
     user_id = message.from_user.id
-    if IS_TESTING_MODE milestone and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🎲 Рандом")
