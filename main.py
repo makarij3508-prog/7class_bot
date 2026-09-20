@@ -17,7 +17,7 @@ from aiohttp import web
 # 🚨 КРИТИЧНА КОНФІГУРАЦІЯ СИСТЕМИ v2.5 (7-В)
 # ==========================================
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = "8735817305:AAE4Vn1YX" + "zyRdpmdZzpT87GQnHFukcpQhts"
 
 # 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
 SUPER_ADMIN_IDS = [8791830931]
