@@ -191,8 +191,9 @@ def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     if user_id in ADMIN_L4_IDS or user_id == 8791830931 or user_id == TEACHER_CHAT_ID:
         keyboard.append([InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), 
                          InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")])
-    if user_id in ADMIN_L4_IDS or user_id == 8791830931:
-        keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu")])
+       if user_id in ADMIN_L4_IDS or user_id == 8791830931:
+        keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu"),
+                         InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
     if user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
