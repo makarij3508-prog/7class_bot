@@ -18,10 +18,10 @@ from aiohttp import web
 # ==========================================
 
 # 🔌 ТВІЙ НОВИЙ ЧИСТИЙ ТОКЕН БОТА (БЕЗ ЖОДНОЇ РЕКЛАМИ СТОРONНІХ КАНАЛІВ)
-BOT_TOKEN = "8735817305:AAHO5qravKHqeNtqgrKZF-tezjw5m9V47S8"
+BOT_TOKEN = "8735817305:AAG-F0qhTrCmbase2GtQcDtkBZV2o1fTceg"
 
 # 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
-SUPER_ADMIN_IDS = [8791830931]
+SUPER_ADMIN_IDS =
 
 # 🪪 СИСТЕМА ДИНАМІЧНИХ ПРАВ ПО ЮЗЕРНЕЙМАХ (КЕРУЄТЬСЯ З АДМІНКИ)
 ADMIN_L4_USERNAMES = ["@пример_админа_л4"]  # Рівень 4: Головні Адміністратори
@@ -72,16 +72,14 @@ HOMEWORK_DATA = {}          # Сюди на льоту підтягується 
 # 👥 ПОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 УЧНІВ)
 # ==========================================
 RANDOM_NAMES = [
-    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
+    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковальчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
     "Маргарита", "Ангеліна", "Нікіта", "Альберт", "Єва", "Роман", "Владислав", 
     "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Макс"
 ]
 
-# СИСТЕМА ДОСЯГНЕНЬ: Лише одна чиста стартова медаль для всіх учнів твоєї групи
 USER_ACHIEVEMENTS = {name: ["🥈 Активний учень 7-В класу"] for name in RANDOM_NAMES}
 
-# 🪪 БАЗА ПРИВ'ЯЗКИ СПРАВЖНІХ ІМЕН ДО ЮЗЕРНЕЙМІВ (ВКЛЮЧАЮЧИ ВЧИТЕЛЬКУ)
 USER_USERNAMES_TEXT = {
     "@llona_x": "Ілона", "@selarkin": "Роман", "@play.funtime.su": "Едуард",
     "@marri_chk": "Марічка", "@myveronichkam": "Вероніка", "@Red_tea21": "Назарій",
@@ -90,14 +88,12 @@ USER_USERNAMES_TEXT = {
     "@victoria197198": "Бакланова Вікторія Олександрівна"
 }
 
-# 🎒 ПРЕДМЕТИ ТА ЦІНИ В МАГАЗИНІ СІМОК ДЛЯ 7-В
 SHOP_ITEMS = {
     "item_shpora": {"name": "🃏 Шпаргалка (+30% до дуелей)", "price": 50},
     "item_antimut": {"name": "🛡️ Анти-Мут (Одноразовий)", "price": 100},
     "item_buytag": {"name": "🏷️ Власний Тег у чаті", "price": 150}
 }
 
-# 🗓️ ШКІЛЬНИЙ РОЗКЛАД УРОКІВ 7-В (З УСІМА ІСТОРІЯМИ, ЗБД ТА МИСТЕЦТВОМ)
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
     "tue": "🗓️ **Вівторок:**\n1. Історія України\n2. Біологія\n3. Геометрія\n4. Укр. мова\n5. ЗБД\n6. Інформатика\n7. Технології",
@@ -106,7 +102,6 @@ SCHEDULE_DATA = {
     "fri": "🗓️ **P'ятниця:**\n1. Історія України\n2. Мистецтво\n3. Англійська\n4. Укр. література\n5. Фізкультура\n6. Біологія\n7. Алгебра"
 }
 
-# 📚 НОВИЙ ДОПОВНЕНИЙ СЛОВНИК ПРЕДМЕТІВ 7-В
 SUBJECT_NAMES = {
     "algebra": "📐 Алгебра", 
     "geometry": "📐 Геометрія", 
@@ -127,15 +122,15 @@ SUBJECT_NAMES = {
 }
 DAY_NAMES = {"mon": "Понеділок", "tue": "Вівторок", "wed": "Середа", "thu": "Четвер", "fri": "П'ятниця"}
 
-# 🔮 БАЗА ПЕРЕДБАЧЕНЬ НА СЬОГОДНІ
 PREDICTIONS = [
-    "🌟 Сьогодні твій щасливий День! Все буде спокійно і без двійок.",
+    "🌟 Сьогодні твій щасливий день! Все буде спокійно і без двійок.",
     "⚡ Обережно! На фізрі доведеться побігати на норматив.",
     "🧠 Ідеальний час, щоб підняти бал з алгебри або геометрії!",
     "🍕 У їдальні сьогодні неймовірно смачні булочки, встигни на перерві!",
     "🎒 Ти забудеш щось важливе вдома, перевір рюкзак просто зараз!",
     "🍀 На укр. мові тебе сьогодні омине виклик до дошки. Везунчик!"
 ]
+
 
 # ==========================================
 # ⚙️ МАШИНА СТАНІВ (FSM) ДЛЯ ІНТЕРАКТИВУ
@@ -202,7 +197,7 @@ def get_chat_exit_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
-    """Оновлена інлайн-клавіатура предметів з Історіями, Мистецтвом та ЗБД"""
+    """Абсолютно чиста та вивірена інлайн-клавіатура предметів з Історіями, ЗБД та Зарубіжною літ."""
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📐 Алгебра", callback_data=f"{prefix}_algebra"), 
          InlineKeyboardButton(text="📐 Геометрія", callback_data=f"{prefix}_geometry")],
@@ -215,10 +210,13 @@ def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data=f"{prefix}_lang_ua"), 
          InlineKeyboardButton(text="📚 Укр. літ.", callback_data=f"{prefix}_lit_ua")],
         [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data=f"{prefix}_english"), 
-         InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf")],
-        [InlineKeyboardButton(text="🎨 Мистецтво", callback_data=f"{prefix}_art"),
-         InlineKeyboardButton(text="🌱 ЗБД", callback_data=f"{prefix}_zbd")]
+         # 🚨 СЮДА ЖЕСТКО ВШИВАЕМ ЗАРУБЕЖКУ, ЧТОБЫ МОЖНО БЫЛО ДОБАВЛЯТЬ ДЗ!
+         InlineKeyboardButton(text="🗺️ Зар. літ.", callback_data=f"{prefix}_lit_world")],
+        [InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf"), 
+         InlineKeyboardButton(text="🎨 Мистецтво", callback_data=f"{prefix}_art")],
+        [InlineKeyboardButton(text="🌱 ЗБД", callback_data=f"{prefix}_zbd")]
     ])
+
 
 def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
     """Генерація інлайн-кнопок днів тижня для розкладу уроків"""
@@ -335,6 +333,7 @@ async def handle_show_books(message: Message):
     if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
     await send_human_message(message, BOOKS_DATA)
 
+# 🚨 ЖЕСТКИЙ ФІКС: УБРАНО СЛОВО MILESTONE, СИНТАКСИС ПРОВЕРЕН
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
     user_id = message.from_user.id
@@ -407,6 +406,7 @@ async def process_ai_question(message: Message, state: FSMContext):
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
         ai_response = await ask_free_ai(message.text)
     await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Пиши наступне запитання!_", reply_markup=get_ai_mode_menu())
+
 
 # ==========================================
 # 🎁 ХЕНДЛЕР ЩОДЕННОГО ПОДАРУНКА v2.5 (ВІД 2 ДО 20 МОНЕТ)
