@@ -1052,6 +1052,60 @@ def restore_homework_from_file():
             print("📦 Базу ДЗ успішно відновлено!")
     except Exception: pass
 
+# ==========================================
+# ⚙️ АДМІН-ХЕНДЛЕРИ ДЛЯ ВАЖЛИВОГО, КНИГ ТА ТЕСТУ v2.5
+# ==========================================
+
+@router.callback_query(F.data == "admin_add_important")
+async def admin_start_edit_important(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    await callback.answer()
+    await callback.message.answer("📌 **Введіть новий текст для розділу 'Важливе':**\n\n(Попередній текст буде повністю замінено)")
+    await state.set_state(BotStates.waiting_for_important_text)
+
+@router.message(BotStates.waiting_for_important_text)
+async def admin_save_important_text(message: Message, state: FSMContext):
+    global IMPORTANT_ANNOUNCEMENT
+    user_id = message.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    IMPORTANT_ANNOUNCEMENT = message.text
+    await message.answer("✅ **Розділ 'Важливе' успішно оновлено для всього 7-В класу!**")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_edit_books")
+async def admin_start_edit_books(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    await callback.answer()
+    await callback.message.answer("📚 **Введіть новий текст або посилання для розділу 'Книги':**")
+    await state.set_state(BotStates.waiting_for_books_text)
+
+@router.message(BotStates.waiting_for_books_text)
+async def admin_save_books_text(message: Message, state: FSMContext):
+    global BOOKS_DATA
+    user_id = message.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id != TEACHER_CHAT_ID: return
+    BOOKS_DATA = message.text
+    await message.answer("✅ **Список підручників успішно оновлено!**")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_toggle_test")
+async def admin_toggle_testing_mode(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931: return
+    global IS_TESTING_MODE
+    IS_TESTING_MODE = not IS_TESTING_MODE
+    status_text = "🟢 **УВІМКНЕНО** (Бот закритий)" if IS_TESTING_MODE else "🔴 **ВИМКНЕНО** (Бот відкритий)"
+    await callback.message.edit_text(
+        text=f"🛠_Панель Головного Розробника:_\n\nРежим тестування змінено: {status_text}",
+        reply_markup=get_admin_menu_keyboard(callback.from_user.id)
+    )
+    await callback.answer()
+
+# ==========================================
+# 🚀 ОФІЦІЙНИЙ СТАБІЛЬНИЙ ЗАПУСК СИСТЕМИ ДЛЯ RENDER
+# ==========================================
+
 async def run_web_server():
     app = web.Application()
     app.router.add_get("/", handle_render_hc)
@@ -1061,31 +1115,27 @@ async def run_web_server():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"🌐 Безкоштовний веб-сервер для Render успішно запущено на порту {port}!")
-    while True: await asyncio.sleep(3600)
+    while True:
+        await asyncio.sleep(3600)
 
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
     
-    # 🔌 Запуск веб-сервера для Render на порту 8080
-    app = web.Application()
-    app.router.add_get("/", handle_render_hc)
-    port = int(os.getenv("PORT", 8080))
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", port)
-    await site.start()
-    print(f"🌐 Веб-сервер успішно запущено на порту {port}!")
-
-    # Фоновые задачи таймеров
+    # Запускаємо фонові таймери захисту від сну та Шпигуна
     asyncio.create_task(self_ping_task())
     asyncio.create_task(cron_secret_agent_picker())
     
-    print("🚀 Бот для 7-В класу запускає стабільний полінг...")
+    # Відновлюємо базу ДЗ
+    restore_homework_from_file()
     
+    print("🚀 Бот для 7-В класу запускає стабільний паралельний полінг...")
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        await dp.start_polling(bot)
+        await asyncio.gather(
+            run_web_server(),
+            dp.start_polling(bot)
+        )
     finally:
         await bot.session.close()
 
