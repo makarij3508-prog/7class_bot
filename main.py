@@ -704,13 +704,14 @@ def get_user_current_level(name: str) -> int:
         if u_name == name:
             target_username = username
             break
-            
     if not target_username: return 0
     if target_username in ADMIN_L4_USERNAMES: return 4
     if target_username in MODERATOR_USERNAMES: return 3
     if target_username in STAROSTA_USERNAMES: return 2
     if target_username in ASSISTANT_USERNAMES: return 1
     return 0
+
+
 
 @router.callback_query(F.data.startswith("lvluser_"))
 async def process_level_user_card(callback: CallbackQuery):
