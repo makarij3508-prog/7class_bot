@@ -1066,13 +1066,32 @@ async def run_web_server():
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
+    
+    # 🚨 ЖЕСТКИЙ ФІКС: Спочатку намертво запускаємо веб-сервер, щоб Render миттєво побачив порт 8080!
+    app = web.Application()
+    app.router.add_get("/", handle_render_hc)
+    port = int(os.getenv("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    print(f"🌐 Безкоштовний веб-сервер для Render успішно запущено на порту {port}!")
+
+    # Запускаємо фонові таймери захисту від сну та Шпигуна
     asyncio.create_task(self_ping_task())
     asyncio.create_task(cron_secret_agent_picker())
+    
+    # Підтягуємо вечне ДЗ з диска сервера
     restore_homework_from_file()
-    print("🚀 Бот для 7-В класу запускає стабільний паралельний полінг...")
+    
+    print("🚀 Бот для 7-В класу запускає стабільний полінг...")
+    
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        await asyncio.gather(run_web_server(), dp.start_polling(bot))
-    finally: await bot.session.close()
+        # Включаємо чистий поллінг без блокування сервера
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
-if __name__ == "__main__": asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
