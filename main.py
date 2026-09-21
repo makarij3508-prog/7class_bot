@@ -1103,6 +1103,22 @@ async def run_web_server():
     print(f"🌐 Безкоштовний веб-сервер для Render успішно запущено на порту {port}!")
     while True: await asyncio.sleep(3600)
 
+@router.message(F.text == "🛠️ Admin Panel")
+async def handle_admin_panel(message: Message):
+    user_id = message.from_user.id
+    if user_id == 8791830931:
+        await message.answer(text="🛠️ **Вітаємо, Макаре! Доступні функції Головного Розробника:**", reply_markup=get_admin_menu_keyboard(user_id))
+        return
+        
+    all_protected_ids = []
+    for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
+        if s: all_protected_ids.extend(s)
+        
+    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
+        await message.answer(text="🛠️ **Вітаємо в панелі адміністратора. Доступні функції згідно з вашим рівнем прав:**", reply_markup=get_admin_menu_keyboard(user_id))
+    else:
+        await message.answer("🛑 У вас немає доступу до цієї команди.")
+
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
