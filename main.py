@@ -205,6 +205,9 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
+async def send_human_message(message: Message, text: str, reply_markup=None):
+    return await message.answer(text, reply_markup=reply_markup)
+
 # ==========================================
 # 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
 # ==========================================
