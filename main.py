@@ -646,6 +646,8 @@ async def admin_start_give_level(callback: CallbackQuery):
 async def process_level_user_card(callback: CallbackQuery):
     user_id = callback.from_user.id
     if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    await callback.answer() # Сходу гасимо годинник на кнопці імені!
+    
     name = callback.data.replace("lvluser_", "")
     current_lvl = get_user_current_level(name)
     
@@ -659,8 +661,80 @@ async def process_level_user_card(callback: CallbackQuery):
          InlineKeyboardButton(text="🔻 Понизити рівень", callback_data=f"lvledit_down_{name}")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]
     ]
-    await callback.message.edit_text(text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {name}\n📊 **Поточний статус:** {level_names.get(current_lvl)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons))
-    await callback.answer()
+    await callback.message.edit_text(
+        text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {name}\n📊 **Поточний статус:** {level_names.get(current_lvl)}", 
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons)
+    )
+
+@router.callback_query(F.data.startswith("lvledit_"))
+async def process_dynamic_level_change(callback: CallbackQuery):
+    admin_id = callback.from_user.id
+    if admin_id != 8791830931 and admin_id not in ADMIN_L4_IDS: return
+    
+    raw_cmd = callback.data.replace("lvledit_", "")
+    cmd_parts = raw_cmd.split("_")
+    if len(cmd_parts) < 2: return
+    
+    action = cmd_parts[0]
+    target_name = cmd_parts[1]
+    
+    # Шукаємо юзернейм учня в базі
+    target_username = ""
+    for username, u_name in USER_USERNAMES_TEXT.items():
+        if u_name == target_name:
+            target_username = username
+            break
+            
+    current_lvl = get_user_current_level(target_name)
+    
+    if action == "up" and current_lvl < 4: new_lvl = current_lvl + 1
+    elif action == "down" and current_lvl > 0: new_lvl = current_lvl - 1
+    else:
+        await callback.answer("⚠️ Рівень вже на максимумі або мінімумі!")
+        return
+        
+    # 🚨 НАДІЙНИЙ ФІКС: Якщо учень не має прописаного ніка - створюємо йому тимчасову роль прямо за ім'ям!
+    if not target_username:
+        target_username = f"@{target_name.lower()}_temp"
+        USER_USERNAMES_TEXT[target_username] = target_name
+        
+    # Чистимо старі роли
+    for lst in [ADMIN_L4_USERNAMES, MODERATOR_USERNAMES, STAROSTA_USERNAMES, ASSISTANT_USERNAMES]:
+        if target_username in lst: lst.remove(target_username)
+        
+    # Призначаємо нову роль
+    if new_lvl == 4: ADMIN_L4_USERNAMES.append(target_username)
+    elif new_lvl == 3: MODERATOR_USERNAMES.append(target_username)
+    elif new_lvl == 2: STAROSTA_USERNAMES.append(target_username)
+    elif new_lvl == 1: ASSISTANT_USERNAMES.append(target_username)
+
+    # Синхронізуємо ID, якщо учень вже в базі
+    target_id = USER_USERNAMES.get(target_username.lower(), 0)
+    if target_id > 0:
+        for lst_id in [ADMIN_L4_IDS, MODERATOR_IDS, STAROSTA_IDS, HW_ASSISTANT_IDS]:
+            if target_id in lst_id: lst_id.remove(target_id)
+        if new_lvl == 4: ADMIN_L4_IDS.append(target_id)
+        elif new_lvl == 3: MODERATOR_IDS.append(target_id)
+        elif new_lvl == 2: STAROSTA_IDS.append(target_id)
+        elif new_lvl == 1: HW_ASSISTANT_IDS.append(target_id)
+        
+    await callback.answer(f"✅ Статус {target_name} успішно змінено!")
+    
+    level_names = {
+        0: "📋 Рівень 0 (Звичайний учень)", 1: "📐 Рівень 1 (Помічник по ДЗ)",
+        2: "👥 Рівень 2 (Староста)", 3: "🛡️ Рівень 3 (Модератор чату)",
+        4: "⭐ Рівень 4 (Головний Admin)"
+    }
+    card_buttons = [
+        [InlineKeyboardButton(text="🔺 Підняти рівень", callback_data=f"lvledit_up_{target_name}"),
+         InlineKeyboardButton(text="🔻 Понизити рівень", callback_data=f"lvledit_down_{target_name}")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]
+    ]
+    await callback.message.edit_text(
+        text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {target_name}\n📊 **Новий статус:** {level_names.get(new_lvl)}", 
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons)
+    )
+
 
 @router.callback_query(F.data.startswith("lvledit_"))
 async def process_dynamic_level_change(callback: CallbackQuery):
