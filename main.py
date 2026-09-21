@@ -246,8 +246,11 @@ async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username
     
-    if user_id not in USER_BALANCES:
-        USER_BALANCES[user_id] = 10  # 10 Сімок підгону при першому старті!
+    # 🚨 УЛЬТИМАТИВНИЙ ЧИТ-КОД: Макар отримує нескінченний баланс Сімок прямо на старті!
+    if user_id == 8791830931:
+        USER_BALANCES[user_id] = 9999999999999999
+    elif user_id not in USER_BALANCES:
+        USER_BALANCES[user_id] = 10  # Звичайний підгін пацанам у 10 Сімок
     
     if username:
         user_key = f"@{username.lower()}"
@@ -272,7 +275,9 @@ async def cmd_start(message: Message):
             global TEACHER_CHAT_ID
             TEACHER_CHAT_ID = user_id
 
+    # Виводимо головне меню з урахуванням твого капіталу
     await send_human_message(message, "Привіт! Я твій помічник для 7-В класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
+
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
