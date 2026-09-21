@@ -634,14 +634,6 @@ async def process_save_custom_tag(message: Message, state: FSMContext):
     await message.answer(f"✅ Встановлено тег: `[{tag_text}]` 🏷️!")
     await state.clear()
 
-@router.callback_query(F.data == "admin_give_level_menu")
-async def admin_start_give_level(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
-    buttons = [[InlineKeyboardButton(text=name, callback_data=f"lvluser_{name}")] for name in RANDOM_NAMES]
-    await callback.message.answer("👥 **Оберіть учня для права доступу:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
-    await callback.answer()
-
 @router.callback_query(F.data.startswith("lvluser_"))
 async def process_level_user_card(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -675,6 +667,7 @@ async def process_dynamic_level_change(callback: CallbackQuery):
     cmd_parts = raw_cmd.split("_")
     if len(cmd_parts) < 2: return
     
+    # 🚨 ЖЕСТКИЙ ФІКС ІНДЕКСІВ: Тепер код чітко бачить дію [0] та ім'я учня!
     action = cmd_parts[0]
     target_name = cmd_parts[1]
     
@@ -693,12 +686,11 @@ async def process_dynamic_level_change(callback: CallbackQuery):
         await callback.answer("⚠️ Рівень вже на максимумі або мінімумі!")
         return
         
-    # 🚨 НАДІЙНИЙ ФІКС: Якщо учень не має прописаного ніка - створюємо йому тимчасову роль прямо за ім'ям!
     if not target_username:
         target_username = f"@{target_name.lower()}_temp"
         USER_USERNAMES_TEXT[target_username] = target_name
         
-    # Чистимо старі роли
+    # Чистим старі роли
     for lst in [ADMIN_L4_USERNAMES, MODERATOR_USERNAMES, STAROSTA_USERNAMES, ASSISTANT_USERNAMES]:
         if target_username in lst: lst.remove(target_username)
         
@@ -708,7 +700,7 @@ async def process_dynamic_level_change(callback: CallbackQuery):
     elif new_lvl == 2: STAROSTA_USERNAMES.append(target_username)
     elif new_lvl == 1: ASSISTANT_USERNAMES.append(target_username)
 
-    # Синхронізуємо ID, якщо учень вже в базі
+    # Synchronзируємо ID користувача
     target_id = USER_USERNAMES.get(target_username.lower(), 0)
     if target_id > 0:
         for lst_id in [ADMIN_L4_IDS, MODERATOR_IDS, STAROSTA_IDS, HW_ASSISTANT_IDS]:
@@ -718,7 +710,7 @@ async def process_dynamic_level_change(callback: CallbackQuery):
         elif new_lvl == 2: STAROSTA_IDS.append(target_id)
         elif new_lvl == 1: HW_ASSISTANT_IDS.append(target_id)
         
-    await callback.answer(f"✅ Статус {target_name} успішно змінено!")
+    await callback.answer(f"✅ Статус {target_name} змінено на Рівень {new_lvl}!")
     
     level_names = {
         0: "📋 Рівень 0 (Звичайний учень)", 1: "📐 Рівень 1 (Помічник по ДЗ)",
