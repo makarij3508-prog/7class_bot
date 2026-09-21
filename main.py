@@ -248,7 +248,7 @@ async def cmd_start(message: Message):
     
     # 🚨 УЛЬТИМАТИВНИЙ ЧИТ-КОД: Макар отримує нескінченний баланс Сімок прямо на старті!
     if user_id == 8791830931:
-        USER_BALANCES[user_id] = 9999999999999999
+        USER_BALANCES[user_id] = 999999999999999999999999999999999999999999999
     elif user_id not in USER_BALANCES:
         USER_BALANCES[user_id] = 10  # Звичайний підгін пацанам у 10 Сімок
     
