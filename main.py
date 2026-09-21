@@ -805,6 +805,172 @@ async def handle_admin_panel(message: Message):
         await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
     else: await message.answer("🛑 Немає доступу.")
 
+# ==========================================
+# 📝 АДМІН-ХЕНДЛЕРИ КОНТЕНТУ v2.6 (НОВІ ANSWER-ПОВІДОМЛЕННЯ)
+# ==========================================
+
+def save_homework_to_file():
+    try:
+        with open("homework.json", "w", encoding="utf-8") as f: 
+            json.dump(HOMEWORK_DATA, f, ensure_ascii=False, indent=4)
+    except Exception: pass
+
+@router.callback_query(F.data == "admin_add_hw")
+async def admin_choose_subject_hw(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS and callback.from_user.id not in HW_ASSISTANT_IDS: return
+    await callback.answer()
+    await callback.message.edit_text(text="Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("ehw"))
+
+@router.callback_query(F.data.startswith("ehw_"))
+async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    subject = callback.data.replace("ehw_", "")
+    await state.update_data(chosen_subject=subject)
+    await callback.message.answer(f"📝 **[ВВЕДЕННЯ ДЗ]** Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
+    await state.set_state(BotStates.waiting_for_hw_text)
+
+@router.message(BotStates.waiting_for_hw_text)
+async def admin_save_hw_text(message: Message, state: FSMContext):
+    data = await state.get_data()
+    subject = data.get("chosen_subject")
+    HOMEWORK_DATA[subject] = message.text
+    save_homework_to_file()
+    await message.answer(f"✅ ДЗ для {SUBJECT_NAMES.get(subject, 'Предмет')} успішно оновлено та збережено назавжди!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_edit_sch")
+async def admin_choose_day_sch(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS: return
+    await callback.answer()
+    await callback.message.edit_text(text="Оберіть день для зміни розкладу:", reply_markup=get_days_menu("esch"))
+
+@router.callback_query(F.data.startswith("esch_"))
+async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    day = callback.data.replace("esch_", "")
+    await state.update_data(chosen_day=day)
+    await callback.message.answer(f"🗓️ **[ВВЕДЕННЯ РОЗКЛАДУ]** Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
+    await state.set_state(BotStates.waiting_for_schedule_text)
+
+@router.message(BotStates.waiting_for_schedule_text)
+async def admin_save_sch_text(message: Message, state: FSMContext):
+    data = await state.get_data()
+    day = data.get("chosen_day")
+    SCHEDULE_DATA[day] = message.text
+    await message.answer(f"✅ Розклад на {DAY_NAMES.get(day, 'День')} успішно змінено!")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_add_important")
+async def admin_start_edit_important(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await callback.message.answer("📌 **[ОГОЛОШЕННЯ]** Введіть новий текст для розділу 'Важливе':")
+    await state.set_state(BotStates.waiting_for_important_text)
+
+@router.message(BotStates.waiting_for_important_text)
+async def admin_save_important_text(message: Message, state: FSMContext):
+    global IMPORTANT_ANNOUNCEMENT
+    IMPORTANT_ANNOUNCEMENT = message.text
+    await message.answer("✅ **Розділ 'Важливе' успішно оновлено!**")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_edit_books")
+async def admin_start_edit_books(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await callback.message.answer("📚 **[БІБЛІОТЕКА]** Введіть новий текст або посилання для розділу 'Книги':")
+    await state.set_state(BotStates.waiting_for_books_text)
+
+@router.message(BotStates.waiting_for_books_text)
+async def admin_save_books_text(message: Message, state: FSMContext):
+    global BOOKS_DATA
+    BOOKS_DATA = message.text
+    await message.answer("✅ **Список підручників успішно оновлено!**")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_toggle_test")
+async def admin_toggle_testing_mode(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931: return
+    global IS_TESTING_MODE
+    IS_TESTING_MODE = not IS_TESTING_MODE
+    status_text = "🟢 ОН" if IS_TESTING_MODE else "🔴 ОФФ"
+    await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
+    await callback.answer()
+
+# ==========================================
+# 🔔 РОЗУМНІ ДЗВІНКИ ТА СИСТЕМНИЙ ЗАПУСК v2.6
+# ==========================================
+
+@router.callback_query(F.data == "profile_bells")
+async def process_smart_school_bells(callback: CallbackQuery):
+    await callback.answer(); now = datetime.now(); weekday = now.weekday()
+    if weekday >= 5:
+        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
+    current_minutes = now.hour * 60 + now.minute
+    
+    # ⏰ ГРАФІК: 4 ПЕРЕРВИ ПО 20 ХВИЛИН, РЕШТА ПО 10 ХВИЛИН!
+    schedule_blocks = [
+        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
+        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},  {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
+        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},  {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
+        {"lesson": 7, "start": 14*60+40, "end": 15*60+25}
+    ]
+    if current_minutes < schedule_blocks[0]["start"]:
+        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu); return
+    if current_minutes > schedule_blocks[-1]["end"]:
+        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти! 🛑🔥", reply_markup=settings_interactive_menu); return
+    for block in schedule_blocks:
+        if block["start"] <= current_minutes <= block["end"]:
+            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nІди вчись, не відволікайся! 👨‍💻❌📱", reply_markup=settings_interactive_menu); return
+    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
+
+@router.callback_query(F.data == "economy_back_to_settings")
+async def process_back_to_settings_callback(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.edit_text(text="⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
+
+async def handle_render_hc(request): return web.Response(text="OK")
+
+async def self_ping_task():
+    url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url: return
+    await asyncio.sleep(30)
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as resp: print(f"⏰ Автопінг Render: {resp.status} OK")
+        except Exception: pass
+        await asyncio.sleep(300)
+
+async def cron_secret_agent_picker():
+    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
+    while True:
+        await asyncio.sleep(86400)
+        if USER_USERNAMES: CURRENT_SECRET_AGENT_ID = random.choice(list(USER_USERNAMES.values())); AGENT_HAS_SENT_SECRET = False
+
+def restore_homework_from_file():
+    global HOMEWORK_DATA
+    try:
+        if os.path.exists("homework.json"):
+            with open("homework.json", "r", encoding="utf-8") as f: HOMEWORK_DATA = json.load(f)
+    except Exception: pass
+
+async def run_web_server():
+    app = web.Application(); app.router.add_get("/", handle_render_hc)
+    runner = web.AppRunner(app); await runner.setup()
+    await web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 8080))).start()
+    while True: await asyncio.sleep(3600)
+
+@router.message(F.text == "🛠️ Admin Panel")
+async def handle_admin_panel(message: Message):
+    user_id = message.from_user.id
+    if user_id == 8791830931:
+        await message.answer(text="🛠️ **Вітаємо, Макаре! Функції Розробника v2.6:**", reply_markup=get_admin_menu_keyboard(user_id)); return
+    all_protected_ids = []
+    for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
+        if s: all_protected_ids.extend(s)
+    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
+        await message.answer(text="🛠️ **Панель Adminістратора:**", reply_markup=get_admin_menu_keyboard(user_id))
+    else: await message.answer("🛑 Немає доступу.")
+
 async def main():
     logging.basicConfig(level=logging.INFO); dp.include_router(router)
     asyncio.create_task(self_ping_task()); asyncio.create_task(cron_secret_agent_picker())
@@ -815,4 +981,4 @@ async def main():
     finally: await bot.session.close()
 
 if __name__ == "__main__": asyncio.run(main())
-+
+
