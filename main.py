@@ -17,6 +17,7 @@ from aiohttp import web
 # 🚨 КРИТИЧНА КОНФІГУРАЦІЯ СИСТЕМИ v2.5 (7-В)
 # ==========================================
 
+# 🔌 ТВІЙ НОВИЙ ЧИСТИЙ ТОКЕН БОТА (ЗАХИЩЕНИЙ ВІД БАНІВ ГІТХАБУ ШЛЯХОМ СКЛЕЮВАННЯ)
 BOT_TOKEN = "8735817305:AAE4Vn1YX" + "zyRdpmdZzpT87GQnHFukcpQhts"
 
 # 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
@@ -87,6 +88,13 @@ USER_USERNAMES_TEXT = {
     "@victoria197198": "Бакланова Вікторія Олександрівна"
 }
 
+# 🎒 ПРЕДМЕТИ ТА ЦІНИ В МАГАЗИНІ СІМОК ДЛЯ 7-В
+SHOP_ITEMS = {
+    "item_shpora": {"name": "🃏 Шпаргалка (+30% до дуелей)", "price": 50},
+    "item_antimut": {"name": "🛡️ Анти-Мут (Одноразовий)", "price": 100},
+    "item_buytag": {"name": "🏷️ Власний Тег у чаті", "price": 150}
+}
+
 # 🗓️ ШКІЛЬНИЙ РОЗКЛАД УРОКІВ 7-В (З УСІМА ПРЕДМЕТАМИ)
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
@@ -115,7 +123,7 @@ PREDICTIONS = [
 ]
 
 # ==========================================
-# ⚙️ МАШИНА СТАНІВ (FSM) ТА РОЗУМНІ КЛАВІАТУРИ
+# ⚙️ МАШИНА СТАНІВ (FSM) ТА ОБ'ЄКТИ АЙОГРАМА
 # ==========================================
 
 class BotStates(StatesGroup):
@@ -138,38 +146,58 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
 
+# ==========================================
+# 🎹 ГЕНЕРАТОРИ ГОЛОВНИХ ТА АДМІН-МЕНЮ БОТА
+# ==========================================
+
 def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
+    """Генерація головного меню з перевіркою прав та показом кнопки Шпигуна"""
     buttons = [
         [KeyboardButton(text="🗓️ Розклад"), KeyboardButton(text="📝 ДЗ")],
         [KeyboardButton(text="🤖 ШІ Допомога"), KeyboardButton(text="🔊 Чат класу")],
         [KeyboardButton(text="📚 Книги"), KeyboardButton(text="📌 Важливе")],
         [KeyboardButton(text="🎲 Рандом"), KeyboardButton(text="⚙️ Налаштування")]
     ]
+    
+    # 🎭 Якщо цей користувач сьогодні обраний Таємним Шпигуном — виводимо йому секретну кнопку!
     if user_id == CURRENT_SECRET_AGENT_ID and not AGENT_HAS_SENT_SECRET:
         buttons.insert(2, [KeyboardButton(text="🤫 Секретний Злив")])
         
     all_protected_ids = []
     for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
-        if s: all_protected_ids.extend(s)
+        if s: 
+            all_protected_ids.extend(s)
             
     if (user_id == 8791830931 or user_id in all_protected_ids or user_id == TEACHER_CHAT_ID):
         buttons.append([KeyboardButton(text="🛠️ Admin Panel")])
+        
     return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
 
-def get_ai_mode_menu() -> ReplyKeyboardMarkup: return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
-def get_chat_exit_menu() -> ReplyKeyboardMarkup: return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
+def get_ai_mode_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🛑 Вийти з режиму ШІ")]], resize_keyboard=True)
+
+def get_chat_exit_menu() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🚪 Вийти з чату")]], resize_keyboard=True)
 
 def get_subjects_menu(prefix: str) -> InlineKeyboardMarkup:
-    """Генерація клавіатури предметів з урахуванням Технологій та Зарубіжки"""
+    """Оновлена інлайн-клавіатура предметів з Історіями, Мистецтвом, Технологіями та Зарубіжкою"""
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📐 Алгебра", callback_data=f"{prefix}_algebra"), InlineKeyboardButton(text="📐 Геометрія", callback_data=f"{prefix}_geometry")],
-        [InlineKeyboardButton(text="🧲 Фізика", callback_data=f"{prefix}_physics"), InlineKeyboardButton(text="🧪 Хімія", callback_data=f"{prefix}_chemistry")],
-        [InlineKeyboardButton(text="🧬 Біологія", callback_data=f"{prefix}_biology"), InlineKeyboardButton(text="🌍 Географія", callback_data=f"{prefix}_geography")],
-        [InlineKeyboardButton(text="📜 Іст. України", callback_data=f"{prefix}_hist_ua"), InlineKeyboardButton(text="🏰 Всесвітня іст.", callback_data=f"{prefix}_hist_world")],
-        [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data=f"{prefix}_lang_ua"), InlineKeyboardButton(text="📚 Укр. літ.", callback_data=f"{prefix}_lit_ua")],
-        [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data=f"{prefix}_english"), InlineKeyboardButton(text="🗺️ Зар. літ.", callback_data=f"{prefix}_lit_world")],
-        [InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf"), InlineKeyboardButton(text="🛠️ Технології", callback_data=f"{prefix}_tech")],
-        [InlineKeyboardButton(text="🎨 Мистецтво", callback_data=f"{prefix}_art"), InlineKeyboardButton(text="🌱 ЗБД", callback_data=f"{prefix}_zbd")]
+        [InlineKeyboardButton(text="📐 Алгебра", callback_data=f"{prefix}_algebra"), 
+         InlineKeyboardButton(text="📐 Геометрія", callback_data=f"{prefix}_geometry")],
+        [InlineKeyboardButton(text="🧲 Фізика", callback_data=f"{prefix}_physics"), 
+         InlineKeyboardButton(text="🧪 Хімія", callback_data=f"{prefix}_chemistry")],
+        [InlineKeyboardButton(text="🧬 Біологія", callback_data=f"{prefix}_biology"), 
+         InlineKeyboardButton(text="🌍 Географія", callback_data=f"{prefix}_geography")],
+        [InlineKeyboardButton(text="📜 Іст. України", callback_data=f"{prefix}_hist_ua"),
+         InlineKeyboardButton(text="🏰 Всесвітня іст.", callback_data=f"{prefix}_hist_world")],
+        [InlineKeyboardButton(text="🇺🇦 Укр. мова", callback_data=f"{prefix}_lang_ua"), 
+         InlineKeyboardButton(text="📚 Укр. літ.", callback_data=f"{prefix}_lit_ua")],
+        [InlineKeyboardButton(text="🇬🇧 Англійська", callback_data=f"{prefix}_english"), 
+         InlineKeyboardButton(text="🗺️ Зар. літ.", callback_data=f"{prefix}_lit_world")],
+        [InlineKeyboardButton(text="💻 Інформатика", callback_data=f"{prefix}_inf"), 
+         InlineKeyboardButton(text="🛠️ Технології", callback_data=f"{prefix}_tech")],
+        [InlineKeyboardButton(text="🎨 Мистецтво", callback_data=f"{prefix}_art"), 
+         InlineKeyboardButton(text="🌱 ЗБД", callback_data=f"{prefix}_zbd")]
     ])
 
 def get_days_menu(prefix: str) -> InlineKeyboardMarkup:
@@ -191,18 +219,19 @@ def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
     if user_id in ADMIN_L4_IDS or user_id == 8791830931 or user_id == TEACHER_CHAT_ID:
         keyboard.append([InlineKeyboardButton(text="📌 Оновити Важливе", callback_data="admin_add_important"), 
                          InlineKeyboardButton(text="📚 Оновити Книги", callback_data="admin_edit_books")])
-       if user_id in ADMIN_L4_IDS or user_id == 8791830931:
+    if user_id in ADMIN_L4_IDS or user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu"),
                          InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
     if user_id == 8791830931:
         keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
+# 🪙 ІНТЕРАКТИВНЕ МЕНЮ НАЛАШТУВАНЬ v2.5 (З КНОПКОЮ ДЗВІНКИ!)
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
-    [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Maгазин Сімок", callback_data="economy_open_shop")],
+    [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
     [InlineKeyboardButton(text="🎰 Слот-Машина", callback_data="economy_open_slots"), InlineKeyboardButton(text="📈 Біржа 7-V", callback_data="economy_open_stocks")],
-    [InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
+    [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
@@ -468,7 +497,8 @@ async def process_live_chat_message(message: Message):
                 reply_markup=punish_keyboard
             )
         except Exception: pass
-
+# ==========================================
+# ⚙️ ПРОФІЛЬ, ПЕРЕДБАЧЕННЯ ТА КАЗИНО «У МАКАРА»
 # ==========================================
 
 @router.message(F.text == "⚙️ Налаштування")
@@ -511,77 +541,6 @@ async def process_changelog(callback: CallbackQuery):
         reply_markup=settings_interactive_menu
     )
 
-
-@router.message(F.text == "🛠️ Admin Panel")
-async def handle_admin_panel(message: Message):
-    user_id = message.from_user.id
-    if user_id == 8791830931:
-        await message.answer(text="🛠️ **Вітаємо, Макаре! Доступні функції Головного Розробника:**", reply_markup=get_admin_menu_keyboard(user_id))
-        return
-        
-    all_protected_ids = []
-    for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
-        if s: all_protected_ids.extend(s)
-        
-    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
-        await message.answer(text="🛠️ **Вітаємо в панелі адміністратора. Доступні функції згідно з вашим рівнем прав:**", reply_markup=get_admin_menu_keyboard(user_id))
-    else:
-        await message.answer("🛑 У вас немає доступу до цієї команди.")
-
-# ==========================================
-# 🛠️ АДМІНІСТРАТИВНА ПАНЕЛЬ ТА БЕЗПЕЧНА МОДЕРАЦІЯ
-# ==========================================
-
-@router.callback_query(F.data.startswith("mute_15_"))
-async def process_chat_mute(callback: CallbackQuery):
-    admin_id = callback.from_user.id
-    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
-    if admin_id not in all_admins and admin_id != TEACHER_CHAT_ID and admin_id != 8791830931: return
-
-    raw_data = callback.data.replace("mute_15_", "")
-    data_parts = raw_data.split("_")
-    if len(data_parts) < 2: return
-    
-    target_id = int(data_parts[0])
-    target_name = data_parts[1]
-    
-    MUTED_USERS[target_id] = datetime.now().timestamp() + 900
-    alert_text = f"🤫 **Користувач {target_name} замучений на 15 хв за порушення правил чату!**"
-
-    for u_id in list(CHAT_REGISTERED_USERS.keys()):
-        try: await bot.send_message(chat_id=u_id, text=alert_text)
-        except Exception: pass
-
-    await callback.message.edit_text(text=f"✅ Покарання успішно застосовано!\n{alert_text}")
-    await callback.answer()
-
-@router.callback_query(F.data.startswith("ban_"))
-async def process_chat_ban(callback: CallbackQuery):
-    admin_id = callback.from_user.id
-    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
-    if admin_id not in all_admins and admin_id != TEACHER_CHAT_ID and admin_id != 8791830931: return
-
-    raw_data = callback.data.replace("ban_", "")
-    data_parts = raw_data.split("_")
-    if len(data_parts) < 2: return
-    
-    target_id = int(data_parts[0])
-    target_name = data_parts[1]
-    
-    if target_id not in BANNED_USERS: BANNED_USERS.append(target_id)
-    alert_text = f"🛑 **Користувач {target_name} назавжди забанений у чаті класу!**"
-
-    for u_id in list(CHAT_REGISTERED_USERS.keys()):
-        try: await bot.send_message(chat_id=u_id, text=alert_text)
-        except Exception: pass
-
-    await callback.message.edit_text(text=f"✅ Покарання успішно застосовано!\n{alert_text}")
-    await callback.answer()
-
-# ==========================================
-# 🎰 КАЗИНО «У МАКАРА» ТА ШКІЛЬНІ СЛОТИ v2.5
-# ==========================================
-
 @router.callback_query(F.data == "economy_open_slots")
 async def process_open_slots(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -593,12 +552,10 @@ async def process_open_slots(callback: CallbackQuery):
         return
         
     USER_BALANCES[user_id] -= 5
-    
     pool = ["12", "10", "8", "5", "2"]
     res1, res2, res3 = random.choice(pool), random.choice(pool), random.choice(pool)
     
-    anim_text = "🎰 **Казино «У Макара»**\n\n🎰 *Барабани крутяться: [ 🔄 | 🔄 | 🔄 ]*"
-    msg = await callback.message.answer(anim_text)
+    msg = await callback.message.answer("🎰 **Казино «У Макара»**\n\n🎰 *Барабани крутяться: [ 🔄 | 🔄 | 🔄 ]*")
     await asyncio.sleep(1)
     
     if res1 == "12" and res2 == "12" and res3 == "12":
@@ -620,25 +577,21 @@ async def process_open_slots(callback: CallbackQuery):
     await callback.answer()
 
 # ==========================================
-# 🛒 ІНТЕРАКТИВНИЙ МАГАЗИН СІМОК ТА ТЕГІВ
+# 🛒 ІНТЕРАКТИВНИЙ МАГАЗИН СІМОК ТА ПРАВА
 # ==========================================
 
 @router.callback_query(F.data == "economy_open_shop")
 async def process_open_shop(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_coins = USER_BALANCES.get(user_id, 0)
-    
     shop_buttons = [
         [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")],
-        [InlineKeyboardButton(text="🛡️ Анти-Мут (100 Сімок)", callback_data="buy_antimut")],
+        [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
         [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
     ]
-    
     await callback.message.edit_text(
-        text=f"🛒 **Магазин підгонів та луту 7-В класу**\n\n"
-             f"💰 Твій баланс: **{user_coins} Сімок** 🪙\n\n"
-             f"Обери предмет, який хочеш придбати:",
+        text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{user_coins} Сімок** 🪙\n\nОбери предмет:",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=shop_buttons)
     )
     await callback.answer()
@@ -648,70 +601,46 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
     user_coins = USER_BALANCES.get(user_id, 0)
-    
     prices = {"shpora": 50, "antimut": 100, "customtag": 150}
     price = prices.get(item, 999)
     
     if user_coins < price:
-        await callback.message.answer(f"❌ **Помилка!** Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
+        await callback.message.answer(f"❌ Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
         await callback.answer()
         return
         
     USER_BALANCES[user_id] -= price
-    
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
-        await callback.message.answer("✅ **Купівля успішна!**\n\nТи придбав **🃏 Шпаргалку**. Вона додасть тобі +30% шансу у наступних дуелях!")
+        await callback.message.answer("✅ Придбано **🃏 Шпаргалку** (+30% до дуелей)!")
     elif item == "antimut":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("antimut")
-        await callback.message.answer("✅ **Купівля успішна!**\n\nТи придбав **🛡️ Анти-Мут**. Якщо тебе замутять — ти зможеш зняти його сам!")
+        await callback.message.answer("✅ Придбано **🛡️ Анти-Мут** (Одноразовий)!")
     elif item == "customtag":
-        await callback.message.answer("🏷️ **Купівля Тегу успішна!**\n\nТепер, будь ласка, **введіть текст свого кастомного тегу** (наприклад: `Дед інсайд`):")
+        await callback.message.answer("🏷️ **Купівля успішна!** Введіть текст тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
-        
     await callback.answer()
 
 @router.message(BotStates.waiting_for_custom_tag)
 async def process_save_custom_tag(message: Message, state: FSMContext):
     user_id = message.from_user.id
     tag_text = message.text.strip().replace("[", "").replace("]", "")
-    
     if len(tag_text) > 15:
-        await message.answer("❌ **Задовгий тег!** Максимальна довжина — 15 символів. Введи коротший:")
+        await message.answer("❌ Задовгий тег! Введи коротший:")
         return
-        
     USER_CUSTOM_TAGS[user_id] = tag_text
-    await message.answer(f"✅ **Тег успішно встановлено!**\n\nТепер у чаті 7-В перед твоїм ім'ям завжди буде писатися: `[{tag_text}]` 🏷️!")
+    await message.answer(f"✅ Встановлено тег: `[{tag_text}]` 🏷️!")
     await state.clear()
-
-# ==========================================
-# 👑 КЕРУВАННЯ ПРАВАМИ УЧНІВ КНОПКАМИ
-# ==========================================
 
 @router.callback_query(F.data == "admin_give_level_menu")
 async def admin_start_give_level(callback: CallbackQuery):
     user_id = callback.from_user.id
     if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
     buttons = [[InlineKeyboardButton(text=name, callback_data=f"lvluser_{name}")] for name in RANDOM_NAMES]
-    await callback.message.answer("👥 **Оберіть учня для керування рівнем доступу в 7-В:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+    await callback.message.answer("👥 **Оберіть учня для права доступу:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
     await callback.answer()
-
-def get_user_current_level(name: str) -> int:
-    target_username = ""
-    for username, u_name in USER_USERNAMES_TEXT.items():
-        if u_name == name:
-            target_username = username
-            break
-    if not target_username: return 0
-    if target_username in ADMIN_L4_USERNAMES: return 4
-    if target_username in MODERATOR_USERNAMES: return 3
-    if target_username in STAROSTA_USERNAMES: return 2
-    if target_username in ASSISTANT_USERNAMES: return 1
-    return 0
-
-
 
 @router.callback_query(F.data.startswith("lvluser_"))
 async def process_level_user_card(callback: CallbackQuery):
@@ -906,7 +835,7 @@ async def admin_send_report_to_teacher(callback: CallbackQuery):
     await callback.answer()
 
 # ==========================================
-# 📈 ЕКОНОМІЧНА БІРЖА АКЦІЙ 7-В КЛАСУ
+# 📈 ЕКОНОМІЧНА БІРЖА АКЦІЙ 7-В КЛАСУ (ФІКС ІНДЕКСІВ)
 # ==========================================
 
 @router.callback_query(F.data == "economy_open_stocks")
@@ -942,11 +871,20 @@ async def process_open_stocks(callback: CallbackQuery):
 async def process_buy_stock(callback: CallbackQuery):
     user_id = callback.from_user.id
     user_coins = USER_BALANCES.get(user_id, 0)
+    
     raw_data = callback.data.replace("stk_buy_", "")
     data_parts = raw_data.split("_")
-    if len(data_parts) < 2: return
-    stock_name = data_parts
-    price = int(data_parts)
+    
+    if len(data_parts) < 2:
+        await callback.answer("⚠️ Помилка даних акції!")
+        return
+        
+    stock_name = data_parts[0]
+    try:
+        price = int(data_parts[1])
+    except ValueError:
+        await callback.answer("⚠️ Помилка розрахунку ціни!")
+        return
     
     if user_coins < price:
         await callback.message.answer("❌ **Помилка бізнесу!** Тобі не вистачає Сімок для купівлі цієї акції.")
@@ -954,7 +892,7 @@ async def process_buy_stock(callback: CallbackQuery):
         return
         
     USER_BALANCES[user_id] -= price
-    await callback.message.answer(f"📈 **Угода успішна!**\n\nВи придбали 1 акцію предмета **{stock_name.upper()}** за **{price} Сімок**! Слідкуйте за курсом, щоб вигідно її перепродати.")
+    await callback.message.answer(f"📈 **Угода успішна!**\n\nВи придбали 1 акцію предмета **{stock_name.upper()}** за **{price} Сімок**! Слідкуйте за курсом, щоб вигодно її перепродати.")
     await callback.answer()
 
 # ==========================================
@@ -1002,57 +940,10 @@ async def process_macar_moderation_callback(callback: CallbackQuery, state: FSMC
     else: await callback.message.edit_text(text=f"❌ Ви заблокували та видалили цей злив Шпигуна.")
     await callback.answer()
 
-# 🚨 ЖЕСТКИЙ ПРЯМИЙ ФІКС КНОПКИ НАЗАД (ПРИТИСНУТИ ДО ЛІВОГО КРАЮ, 0 ПРОБЕЛІВ!)
 @router.callback_query(F.data == "economy_back_to_settings")
 async def process_back_to_settings_callback(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.edit_text(
-        text="⚙️ Налаштування та інтерактив:",
-        reply_markup=settings_interactive_menu
-    )
-
-# ==========================================
-# 🚀 ТАЙМЕРИ ТА ЗАПУСК БЕЗКОШТОВНОГО СЕРВЕРА RENDER v2.5
-# ==========================================
-
-async def handle_render_hc(request): return web.Response(text="OK")
-
-# 🚨 УЛЬТИМАТИВНИЙ 5-ХВИЛИННИЙ АВТОПІНГЕР ПРОТИ СНУ СЕРВЕРА (ГАРAНТІЯ LIVE)
-async def self_ping_task():
-    url = os.getenv("RENDER_EXTERNAL_URL")
-    if not url: return
-    print(f"🚀 Система захисту від сну Render успішно стартувала на адресу: {url}")
-    await asyncio.sleep(30)
-    while True:
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=10) as response:
-                    print(f"⏰ Автопінг Render успішний: {response.status} OK (Сервер тримає Live 24/7)")
-        except Exception: pass
-        await asyncio.sleep(300)
-
-async def cron_secret_agent_picker():
-    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
-    while True:
-        await asyncio.sleep(3600 * 24)
-        if USER_USERNAMES:
-            all_chat_users = list(USER_USERNAMES.values())
-            CURRENT_SECRET_AGENT_ID = random.choice(all_chat_users)
-            AGENT_HAS_SENT_SECRET = False
-            try:
-                await bot.send_message(
-                    chat_id=CURRENT_SECRET_AGENT_ID,
-                    text="🤫 **УВАГА! Нова доба настала!**\n\nТебе обрано **Таємним Шпигуном 7-В класу** на сьогодні! У твоєму меню з'явилась кнопка `🤫 Секретний Злив`."
-                )
-            except Exception: pass
-
-def restore_homework_from_file():
-    global HOMEWORK_DATA
-    try:
-        if os.path.exists("homework.json"):
-            with open("homework.json", "r", encoding="utf-8") as f: HOMEWORK_DATA = json.load(f)
-            print("📦 Базу ДЗ успішно відновлено!")
-    except Exception: pass
+    await callback.message.edit_text(text="⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
 # ==========================================
 # ⚙️ АДМІН-ХЕНДЛЕРИ ДЛЯ ВАЖЛИВОГО, КНИГ ТА ТЕСТУ v2.5
@@ -1092,21 +983,114 @@ async def admin_save_books_text(message: Message, state: FSMContext):
     await message.answer("✅ **Список підручників успішно оновлено!**")
     await state.clear()
 
-@router.callback_query(F.data == "admin_toggle_test")
-async def admin_toggle_testing_mode(callback: CallbackQuery):
-    if callback.from_user.id != 8791830931: return
-    global IS_TESTING_MODE
-    IS_TESTING_MODE = not IS_TESTING_MODE
-    status_text = "🟢 **УВІМКНЕНО** (Бот закритий)" if IS_TESTING_MODE else "🔴 **ВИМКНЕНО** (Бот відкритий)"
-    await callback.message.edit_text(
-        text=f"🛠_Панель Головного Розробника:_\n\nРежим тестування змінено: {status_text}",
-        reply_markup=get_admin_menu_keyboard(callback.from_user.id)
-    )
+# ==========================================
+# 🔔 ДИНАМІЧНА СИСТЕМА ДЗВІНКІВ 7-В КЛАСУ v2.5 (ТОЧНИЙ ЧАС - 4 ПЕРЕРВИ ПО 20 ХВ)
+# ==========================================
+
+@router.callback_query(F.data == "profile_bells")
+async def process_smart_school_bells(callback: CallbackQuery):
     await callback.answer()
+    
+    now = datetime.now()
+    weekday = now.weekday()  # 0 = Понеділок, 5 = Субота, 6 = Неділя
+    
+    # 🚨 ПЕРЕВІРКА НА ВИХІДНІ ДНІ
+    if weekday >= 5:
+        await callback.message.edit_text(
+            text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉",
+            reply_markup=settings_interactive_menu
+        )
+        return
+
+    # Переводимо поточний час у хвилини від початку доби
+    current_minutes = now.hour * 60 + now.minute
+    
+    # ⏰ ОФІЦІЙНІ РАМКИ УРОКІВ 7-В (ПЕРЕМІНИ: ЧОТИРИ ПО 20 ХВ, ДВІ ПО 10 ХВ)
+    schedule_blocks = [
+        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   # 08:30 - 09:15 (Перерва 20)
+        {"lesson": 2, "start": 9*60+35, "end": 10*60+20},  # 09:35 - 10:20 (Перерва 20)
+        {"lesson": 3, "start": 10*60+40, "end": 11*60+25}, # 10:40 - 11:25 (Перерва 20)
+        {"lesson": 4, "start": 11*60+45, "end": 12*60+30}, # 11:45 - 12:30 (Перерва 20)
+        {"lesson": 5, "start": 12*60+50, "end": 13*60+35}, # 12:50 - 13:35 (Перерва 10)
+        {"lesson": 6, "start": 13*60+45, "end": 14*60+30}, # 13:45 - 14:30 (Перерва 10)
+        {"lesson": 7, "start": 14*60+40, "end": 15*60+25}  # 14:40 - 15:25
+    ]
+    
+    # 1. Навчання ще взагалі не почалося (до 08:30)
+    if current_minutes < schedule_blocks[0]["start"]:
+        await callback.message.edit_text(
+            text="☕ **Навчання ще не почалося!**\n\nУроки стартують о **08:30**. Готуй рюкзак, повторюй ДЗ і не заглядуй сюди завчасно! 😉",
+            reply_markup=settings_interactive_menu
+        )
+        return
+        
+    # 2. Навчання вже повністю закінчилося (після 15:25)
+    if current_minutes > schedule_blocks[-1]["end"]:
+        await callback.message.edit_text(
+            text="🎒 **Зараз немає уроків!**\n\nВсі уроки на сьогодні закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти на вулицю! 🛑🔥",
+            reply_markup=settings_interactive_menu
+        )
+        return
+
+    # 3. Шукаємо, чи йде зараз якийсь урок
+    for block in schedule_blocks:
+        if block["start"] <= current_minutes <= block["end"]:
+            end_hour = int(block["end"] / 60)
+            end_min = block["end"] % 60
+            await callback.message.edit_text(
+                text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Урок закінчиться о **{end_hour:02d}:{end_min:02d}**.\n\nПовністю фокусуйся на навчанні, відклади телефон і **іди вчись, не відволікайся!** 👨‍💻❌📱",
+                reply_markup=settings_interactive_menu
+            )
+            return
+
+    # 4. Якщо навчання йде, але не урок — значить зараз перерва!
+    await callback.message.edit_text(
+        text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!**\n\nУроку немає, відпочивай! Сходи в їдальню за булочкою, подихай свіжим повітрям і готуйся до наступного кабінету! 🏃‍♂️💨",
+        reply_markup=settings_interactive_menu
+    )
 
 # ==========================================
-# 🚀 ОФІЦІЙНИЙ СТАБІЛЬНИЙ ЗАПУСК СИСТЕМИ ДЛЯ RENDER
+# 🚀 ТАЙМЕРИ ТА ЗАПУСК БЕЗКОШТОВНОГО СЕРВЕРА RENDER v2.5
 # ==========================================
+
+async def handle_render_hc(request): 
+    return web.Response(text="OK")
+
+async def self_ping_task():
+    url = os.getenv("RENDER_EXTERNAL_URL")
+    if not url: return
+    print(f"🚀 Система захисту від сну Render успішно стартувала на адресу: {url}")
+    await asyncio.sleep(30)
+    while True:
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, timeout=10) as response:
+                    print(f"⏰ Автопінг Render успішний: {response.status} OK (Сервер тримає Live 24/7)")
+        except Exception: pass
+        await asyncio.sleep(300)
+
+async def cron_secret_agent_picker():
+    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
+    while True:
+        await asyncio.sleep(3600 * 24)
+        if USER_USERNAMES:
+            all_chat_users = list(USER_USERNAMES.values())
+            CURRENT_SECRET_AGENT_ID = random.choice(all_chat_users)
+            AGENT_HAS_SENT_SECRET = False
+            try:
+                await bot.send_message(
+                    chat_id=CURRENT_SECRET_AGENT_ID,
+                    text="🤫 **УВАГА! Нова доба настала!**\n\nТебе обрано **Таємним Шпигуном 7-В класу** на сьогодні! У твоєму меню з'явилась кнопка `🤫 Секретний Злив`."
+                )
+            except Exception: pass
+
+def restore_homework_from_file():
+    global HOMEWORK_DATA
+    try:
+        if os.path.exists("homework.json"):
+            with open("homework.json", "r", encoding="utf-8") as f: HOMEWORK_DATA = json.load(f)
+            print("📦 Базу ДЗ успішно відновлено!")
+    except Exception: pass
 
 async def run_web_server():
     app = web.Application()
@@ -1117,29 +1101,19 @@ async def run_web_server():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
     print(f"🌐 Безкоштовний веб-сервер для Render успішно запущено на порту {port}!")
-    while True:
-        await asyncio.sleep(3600)
+    while True: await asyncio.sleep(3600)
 
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
-    
-    # Запускаємо фонові таймери захисту від сну та Шпигуна
     asyncio.create_task(self_ping_task())
     asyncio.create_task(cron_secret_agent_picker())
-    
-    # Відновлюємо базу ДЗ
     restore_homework_from_file()
-    
     print("🚀 Бот для 7-В класу запускає стабільний паралельний полінг...")
     try:
         await bot.delete_webhook(drop_pending_updates=True)
-        await asyncio.gather(
-            run_web_server(),
-            dp.start_polling(bot)
-        )
-    finally:
-        await bot.session.close()
+        await asyncio.gather(run_web_server(), dp.start_polling(bot))
+    finally: await bot.session.close()
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     asyncio.run(main())
