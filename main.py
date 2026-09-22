@@ -881,35 +881,43 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
-    await callback.answer(); now = datetime.now(); weekday = now.weekday()
-    ua_hour = (now.hour + 3) % 24
-
+    await callback.answer()
+    from datetime import timedelta
+    now = datetime.now() + timedelta(hours=3)
+    weekday = now.weekday()
     if weekday >= 5:
-        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
-   current_minutes = ua_hour * 60 + now.minute
-
-    
+        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu)
+        return
+    ua_hour = now.hour
+    current_minutes = ua_hour * 60 + now.minute
     schedule_blocks = [
-        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
-        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},  {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
-        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},  {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
+        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},
+        {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
+        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},
+        {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
+        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},
+        {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
         {"lesson": 7, "start": 14*60+40, "end": 15*60+25}
     ]
     if current_minutes < schedule_blocks[0]["start"]:
-        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu); return
+        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu)
+        return
     if current_minutes > schedule_blocks[-1]["end"]:
-        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти! 🛑🔥", reply_markup=settings_interactive_menu); return
+        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки на сьогодні закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти на вулицю! 🛑🔥", reply_markup=settings_interactive_menu)
+        return
     for block in schedule_blocks:
         if block["start"] <= current_minutes <= block["end"]:
-            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nІди вчись, не відволікайся! 👨‍💻❌📱", reply_markup=settings_interactive_menu); return
-    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
+            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Урок закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nПовністю фокусуйся на навчанні, відклади телефон і **іди вчись, не відволікайся!** 👨‍💻❌📱", reply_markup=settings_interactive_menu)
+            return
+    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою, подихай свіжим повітрям і готуйся до наступного кабінету! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
 
 @router.callback_query(F.data == "economy_back_to_settings")
 async def process_back_to_settings_callback(callback: CallbackQuery):
     await callback.answer()
     await callback.message.edit_text(text="⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
-async def handle_render_hc(request): return web.Response(text="OK")
+async def handle_render_hc(request): 
+    return web.Response(text="OK")
 
 async def self_ping_task():
     url = os.getenv("RENDER_EXTERNAL_URL")
@@ -936,8 +944,10 @@ def restore_homework_from_file():
     except Exception: pass
 
 async def run_web_server():
-    app = web.Application(); app.router.add_get("/", handle_render_hc)
-    runner = web.AppRunner(app); await runner.setup()
+    app = web.Application()
+    app.router.add_get("/", handle_render_hc)
+    runner = web.AppRunner(app)
+    await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 8080))).start()
     while True: await asyncio.sleep(3600)
 
@@ -945,22 +955,27 @@ async def run_web_server():
 async def handle_admin_panel(message: Message):
     user_id = message.from_user.id
     if user_id == 8791830931:
-        await message.answer(text="🛠️ **Вітаємо, Макаре! Функції Розробника v2.6:**", reply_markup=get_admin_menu_keyboard(user_id)); return
+        await message.answer(text="🛠️ **Вітаємо, Макаре! Функції Розробника v2.6:**", reply_markup=get_admin_menu_keyboard(user_id))
+        return
     all_protected_ids = []
     for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
         if s: all_protected_ids.extend(s)
     if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
-        await message.answer(text="🛠️ **Панель Adminістратора:**", reply_markup=get_admin_menu_keyboard(user_id))
-    else: await message.answer("🛑 Немає доступу.")
+        await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
+    else: 
+        await message.answer("🛑 Немає доступу.")
 
 async def main():
-    logging.basicConfig(level=logging.INFO); dp.include_router(router)
-    asyncio.create_task(self_ping_task()); asyncio.create_task(cron_secret_agent_picker())
+    logging.basicConfig(level=logging.INFO)
+    dp.include_router(router)
+    asyncio.create_task(self_ping_task())
+    asyncio.create_task(cron_secret_agent_picker())
     restore_homework_from_file()
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         await asyncio.gather(run_web_server(), dp.start_polling(bot))
-    finally: await bot.session.close()
+    finally: 
+        await bot.session.close()
 
-if __name__ == "__main__": asyncio.run(main())
-
+if __name__ == "__main__": 
+    asyncio.run(main())
