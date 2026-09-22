@@ -61,7 +61,7 @@ HOMEWORK_DATA = {}
 
 
 RANDOM_NAMES = [
-    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
+    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковальчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
     "Маргарита", "Ангеліна", "Нікіта", "Альберт", "Єва", "Роман", "Владислав", 
     "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Макс"
@@ -179,7 +179,7 @@ def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
         keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu"),
                          InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
     if user_id == 8791830931:
-        keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
+        keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ON/ОFF", callback_data="admin_toggle_test")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
