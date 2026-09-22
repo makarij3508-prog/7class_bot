@@ -1138,6 +1138,44 @@ async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMConte
         
     await state.clear()
 
+@router.message(Command("give_coins"))
+async def macar_universal_give_coins(message: Message):
+    if message.from_user.id != 8791830931: return
+    args = message.text.split()
+    if len(args) < 3:
+        await message.answer("⚠️ **Формат команди:**\n`/give_coins @username_або_ID кількість`\n\nПриклади:\n• `/give_coins @spala185_13 1500` (Артему)\n• `/give_coins 8791830931 50000` (Собі по ID)")
+        return
+        
+    target_raw = args[1].strip()
+    try:
+        amount = int(args[2])
+    except ValueError:
+        await message.answer("❌ Кількість монет має бути цілим числом!")
+        return
+        
+    target_id = 0
+    # Якщо ввели ID чистом (наприклад, твій ID)
+    if target_raw.isdigit():
+        target_id = int(target_raw)
+    else:
+        # Якщо ввели текстовий юзернейм з @
+        target_username = target_raw.lower()
+        target_id = USER_USERNAMES.get(target_username, 0)
+        
+    if target_id == 0:
+        await message.answer(f"❌ **Користувача {target_raw} не знайдено в базі!** Він повинен хоча б раз натиснути `/start` у боті.")
+        return
+        
+    if target_id not in USER_BALANCES: USER_BALANCES[target_id] = 0
+    USER_BALANCES[target_id] += amount
+    
+    await message.answer(f"🪙 **Казначейство 7-В класу активовано!**\n\nБаланс користувача `{target_raw}` успішно поповнено на **+{amount} Сімок** 🪙!")
+    
+    try:
+        await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Розробник Макар нарахував тобі **{amount} Сімок**! 🪙")
+    except Exception: pass
+
+
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
