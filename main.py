@@ -303,17 +303,18 @@ async def process_ai_question(message: Message, state: FSMContext):
     await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Пиши наступне запитання!_", reply_markup=get_ai_mode_menu())
 
 async def ask_free_ai(question: str) -> str:
-    url = "https://duckduckgo.com"
-    payload = {"model": "gpt-4o-mini", "messages": [{"role": "system", "content": "Ти помічник для 7-В класу. Відповідай чітко, українською."}, {"role": "user", "content": question}]}
+    encoded_prompt = aiohttp.helpers.urlencode({"prompt": f"Ти помічник для 7-В класу. Тобі пише учень. Відповідай чітко, коротко, виключно українською мовою. Питання: {question}"})
+    url = f"https://pollinations.ai?{encoded_prompt}&model=openai"
     headers = {"User-Agent": "Mozilla/5.0"}
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload, headers=headers, timeout=12) as response:
+            async with session.get(url, headers=headers, timeout=15) as response:
                 if response.status == 200:
-                    res_data = await response.json()
-                    return res_data.get("reply", "⚠️ ШІ тимчасово думає...")
-                return "⚠️ Сервер ШІ тимчасово перевантажений."
-    except Exception: return "❌ Наразі ШІ відпочиває. Спробуйте пізніше!"
+                    text_response = await response.text()
+                    if text_response.strip(): return text_response.strip()
+                return "⚠️ Сервер ШІ трохи задумався, надішли питання ще раз!"
+    except Exception:
+        return "❌ ШІ тимчасово відпочиває. Спробуй ще раз за пару секунд!"
 
 
 
