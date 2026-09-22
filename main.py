@@ -36,7 +36,15 @@ TEACHER_CHAT_ID = 0
 
 
 USER_TELEGRAM_NAMES = {8791830931: "Макар"}
-USER_USERNAMES = {}
+
+USER_USERNAMES = {
+    "@macar_dev_temp": 8791830931,
+    "@red_tea21": 5543210987,
+    "@ezhik_lite": 441394079,  
+    "@ilona_x": 1122334455,
+    "@marri_chk": 9988776655
+}
+
 
 
 CHAT_REGISTERED_USERS = {}  
