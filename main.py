@@ -1136,42 +1136,64 @@ async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMConte
         
     await state.clear()
 
-@router.message(Command("give_coins"))
-async def macar_universal_give_coins(message: Message):
-    if message.from_user.id != 8791830931: return
+@router.message(Command("pay"))
+async def universal_pay_system_command(message: Message):
+    user_id = message.from_user.id
     args = message.text.split()
+    
     if len(args) < 3:
-        await message.answer("⚠️ **Формат команди:**\n`/give_coins @username_або_ID кількість`\n\nПриклади:\n• `/give_coins @spala185_13 1500` (Артему)\n• `/give_coins 8791830931 50000` (Собі по ID)")
+        await message.answer("⚠️ **Формат переказу Сімок:**\n`/pay @username кількість повідомлення`\n\nПриклад:\n`/pay @marri_chk 250 для любимої` 💌")
         return
         
-    target_raw = args[1].strip()
+    target_username = args[1].strip().lower()
+    
     try:
         amount = int(args[2])
     except ValueError:
         await message.answer("❌ Кількість монет має бути цілим числом!")
         return
         
-    target_id = 0
-    # Якщо ввели ID чистом (наприклад, твій ID)
-    if target_raw.isdigit():
-        target_id = int(target_raw)
-    else:
-        # Якщо ввели текстовий юзернейм з @
-        target_username = target_raw.lower()
-        target_id = USER_USERNAMES.get(target_username, 0)
-        
-    if target_id == 0:
-        await message.answer(f"❌ **Користувача {target_raw} не знайдено в базі!** Він повинен хоча б раз натиснути `/start` у боті.")
+    if amount <= 0:
+        await message.answer("❌ Сума переказу має бути більшою за 0!")
         return
         
-    if target_id not in USER_BALANCES: USER_BALANCES[target_id] = 0
-    USER_BALANCES[target_id] += amount
+    # Перевірка балансу (Макар має нескінченний чит, тому його баланс не обмежує)
+    sender_balance = USER_BALANCES.get(user_id, 0)
+    if user_id != 8791830931 and sender_balance < amount:
+        await message.answer(f"❌ **Недостатньо Сімок!** Твій поточний баланс: **{sender_balance} Сімок** 🪙.")
+        return
+        
+    # Шукаємо отримувача в базі ID
+    target_id = USER_USERNAMES.get(target_username, 0)
+    if target_id == 0:
+        await message.answer(f"❌ **Учня {target_username} не знайдено в базі!** Він повинен хоча б раз натиснути `/start` у боті.")
+        return
+        
+    if target_id == user_id:
+        await message.answer("🧠 Хитрун! Не можна переводити Сімки самому собі!")
+        return
+        
+    # Збираємо повідомлення/коментар, якщо він є
+    comment_text = " ".join(args[3:]) if len(args) > 3 else "Без коментаря"
     
-    await message.answer(f"🪙 **Казначейство 7-В класу активовано!**\n\nБаланс користувача `{target_raw}` успішно поповнено на **+{amount} Сімок** 🪙!")
+    # Списуємо у відправника (якщо це не Макар з читом)
+    if user_id != 8791830931:
+        USER_BALANCES[user_id] -= amount
+        
+    # Нараховуємо отримувачу
+    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
+    
+    sender_name = USER_TELEGRAM_NAMES.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
+    
+    await message.answer(f"💸 **Переказ успішний!**\n\nВи відправили **{amount} Сімок** 🪙 для **{target_username}**.\n💬 Коментар: «_{comment_text}_»")
     
     try:
-        await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Розробник Макар нарахував тобі **{amount} Сімок**! 🪙")
-    except Exception: pass
+        await bot.send_message(
+            chat_id=target_id,
+            text=f"🎁 **Тобі прилетів грошовий переказ!**\n\n👤 **Відправник:** {sender_name}\n🪙 **Сума:** +{amount} Сімок\n💌 **Повідомлення:** «_{comment_text}_»\n\nПеревір свій оновлений баланс у налаштуваннях! 🎉"
+        )
+    except Exception:
+        pass
 
 
 async def main():
