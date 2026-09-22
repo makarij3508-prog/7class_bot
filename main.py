@@ -878,6 +878,99 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
     await callback.answer()
 
+@router.callback_query(F.data == "admin_mark_attendance")
+async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    await callback.answer()
+    await callback.message.answer("📝 **[ВІДВІДУВАННІСТЬ]** Введіть прізвища або імена учнів, які сьогодні відсутні (через кому або з нового рядка):")
+    await state.set_state(BotStates.waiting_for_absence_info)
+
+@router.message(BotStates.waiting_for_absence_info)
+async def admin_save_attendance(message: Message, state: FSMContext):
+    global ABSENT_TODAY_LIST
+    user_id = message.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    text = message.text.replace("\n", ",")
+    ABSENT_TODAY_LIST = [name.strip() for name in text.split(",") if name.strip()]
+    if ABSENT_TODAY_LIST:
+        formatted = "\n".join([f"• {n}" for n in ABSENT_TODAY_LIST])
+        await message.answer(f"✅ **Список збережено!** (Всього відсутніх: {len(ABSENT_TODAY_LIST)}):\n\n{formatted}")
+    else:
+        await message.answer("⚠️ Список порожній.")
+    await state.clear()
+
+@router.callback_query(F.data == "admin_send_report")
+async def admin_send_report_to_teacher(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
+    if not ABSENT_TODAY_LIST:
+        await callback.message.answer("⚠️ Список відсутніх порожній! Спочатку відмітьте прогульників.")
+        await callback.answer()
+        return
+    formatted = "\n".join([f"• {name}" for name in ABSENT_TODAY_LIST])
+    report_text = f"📢 **Щоденний звіт про відсутніх учнів 7-В класу**\n\nУчнів, яких сьогодні немає:\n{formatted}\n\nВсього відсутніх: {len(ABSENT_TODAY_LIST)}"
+    target_chat_id = TEACHER_CHAT_ID if TEACHER_CHAT_ID else 8791830931
+    try:
+        await bot.send_message(chat_id=target_chat_id, text=report_text)
+        await callback.message.answer("🚀 **Звіт успішно надіслано в особисті повідомлення Баклановій Вікторії Олександрівні!**")
+    except Exception:
+        await callback.message.answer("❌ **Помилка відправки!** Класний керівник ще не запустив бота або заблокував його.")
+    await callback.answer()
+
+@router.callback_query(F.data == "admin_manage_ach")
+async def admin_start_manage_achievements(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    buttons = [[InlineKeyboardButton(text=name, callback_data=f"achuser_{name}")] for name in RANDOM_NAMES]
+    await callback.message.answer("🏆 **[ДОСЯГНЕННЯ]** Оберіть учня для видачі або видалення медалей:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+
+@router.callback_query(F.data.startswith("achuser_"))
+async def process_admin_ach_user_card(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    name = callback.data.replace("achuser_", "")
+    await state.update_data(ach_target_name=name)
+    ach_list = USER_ACHIEVEMENTS.get(name, ["🥈 Активний учень 7-В класу"])
+    formatted = "\n".join(ach_list)
+    
+    buttons = [
+        [InlineKeyboardButton(text="➕ Додати нове досягнення", callback_data="achaction_add")],
+        [InlineKeyboardButton(text="🗑️ Очистити всі досягнення", callback_data="achaction_clear")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_manage_ach")]
+    ]
+    await callback.message.answer(f"🏆 **Керування досягненнями учня: {name}**\n\nПоточні медалі:\n{formatted}", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+
+@router.callback_query(F.data.startswith("achaction_"))
+async def process_admin_ach_action(callback: CallbackQuery, state: FSMContext):
+    user_id = callback.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    action = callback.data.replace("achaction_", "")
+    state_data = await state.get_data()
+    name = state_data.get("ach_target_name")
+    
+    if action == "clear":
+        USER_ACHIEVEMENTS[name] = ["🥈 Активний учень 7-В класу"]
+        await callback.message.answer(f"✅ Усі кастомні досягнення учня **{name}** успішно анульовані!")
+    elif action == "add":
+        await callback.message.answer(f"✍️ Введіть текст нового досягнення (з емодзі) для учня **{name}**:")
+        await state.set_state(BotStates.admin_input_achievement)
+
+@router.message(BotStates.admin_input_achievement)
+async def admin_save_new_achievement(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    state_data = await state.get_data()
+    name = state_data.get("ach_target_name")
+    
+    if name not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[name] = []
+    USER_ACHIEVEMENTS[name].append(message.text)
+    await message.answer(f"✅ Досягнення успішно додано для **{name}**!")
+    await state.clear()
+
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
