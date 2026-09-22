@@ -905,9 +905,13 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
     await callback.answer(); now = datetime.now(); weekday = now.weekday()
+        # 🚨 ОЛІМПІАДНИЙ ФІКС ЧАСУ: Коригуємо серверний час Render на +3 години під Україну
+    ua_hour = (now.hour + 3) % 24
+
     if weekday >= 5:
         await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
-    current_minutes = now.hour * 60 + now.minute
+   current_minutes = ua_hour * 60 + now.minute
+
     
     # ⏰ ГРАФІК: 4 ПЕРЕРВИ ПО 20 ХВИЛИН, РЕШТА ПО 10 ХВИЛИН!
     schedule_blocks = [
