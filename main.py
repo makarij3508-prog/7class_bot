@@ -456,10 +456,11 @@ async def process_open_shop(callback: CallbackQuery):
         [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")],
         [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
         [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")],
+        [InlineKeyboardButton(text="🏆 Купити Досягнення (250 Сімок)", callback_data="buy_achievement_pack")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
     ]
     await callback.message.edit_text(
-        text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{user_coins} Сімок** 🪙\n\nОбери предмет:",
+        text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{user_coins} Сімок**",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=shop_buttons)
     )
     await callback.answer()
@@ -469,27 +470,41 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
     user_coins = USER_BALANCES.get(user_id, 0)
-    prices = {"shpora": 50, "antimut": 100, "customtag": 150}
+    
+    prices = {"shpora": 50, "antimut": 100, "customtag": 150, "achievement_pack": 250}
     price = prices.get(item, 999)
     
     if user_coins < price:
-        await callback.message.answer(f"❌ Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
+        await callback.message.answer(f"❌ **Помилка фінансів!** Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
         await callback.answer()
         return
         
     USER_BALANCES[user_id] -= price
+    
+    tax_amount = int(price * 0.3)
+    USER_BALANCES[8791830931] = USER_BALANCES.get(8791830931, 0) + tax_amount
+    for l4_id in ADMIN_L4_IDS:
+        if l4_id != 8791830931:
+            USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
+
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
-        await callback.message.answer("✅ Придбано **🃏 Шпаргалку** (+30% до дуелей)!")
+        await callback.message.answer(f"🃏 **Купівля успішна!** Придбано Шпаргалку (+30% до дуелей).\n💸 Макару та Адмінам сплачено податок: **{tax_amount} Сімок**!")
     elif item == "antimut":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("antimut")
-        await callback.message.answer("✅ Придбано **🛡️ Анти-Мут** (Одноразовий)!")
+        await callback.message.answer(f"🛡️ **Купівля успішна!** Придбано Одноразовий Анти-Мут.\n💸 Макару та Адмінам сплачено податок: **{tax_amount} Сімок**!")
     elif item == "customtag":
-        await callback.message.answer("🏷️ **Купівля успішна!** Введіть текст тегу (до 15 символів):")
+        await callback.message.answer(f"🏷️ **Купівля успішна!** Сплачено податок {tax_amount} 🪙.\nВведіть текст вашого кастомного тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
+    elif item == "achievement_pack":
+        await callback.message.answer("💸 **250 Сімок зарезервовано!**\n\n✍️ Тепер введіть текст досягнення (з емодзі), яке ви хочете собі купити. Запит відправиться Макару на перевірку!")
+        await state.set_state(BotStates.admin_input_achievement)
+        await state.update_data(buyer_user_id=user_id, buyer_tax=tax_amount)
+        
     await callback.answer()
+
 
 @router.message(BotStates.waiting_for_custom_tag)
 async def process_save_custom_tag(message: Message, state: FSMContext):
@@ -962,9 +977,35 @@ async def process_admin_ach_action(callback: CallbackQuery, state: FSMContext):
 @router.message(BotStates.admin_input_achievement)
 async def admin_save_new_achievement(message: Message, state: FSMContext):
     user_id = message.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
     state_data = await state.get_data()
+    buyer_id = state_data.get("buyer_user_id")
+    
+    if buyer_id:
+        ach_text = message.text
+        buyer_name = USER_TELEGRAM_NAMES.get(buyer_id, message.from_user.first_name if message.from_user.first_name else "Учень")
+        confirm_markup = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🟢 Схвалити медаль", callback_data=f"buyach_approve_{buyer_id}"),
+             InlineKeyboardButton(text="❌ Відхилити (Бек Сімок)", callback_data=f"buyach_reject_{buyer_id}")]
+        ])
+        await state.update_data(pending_ach_text=ach_text)
+        try:
+            await bot.send_message(
+                chat_id=8791830931,
+                text=f"👑 **[ЦРУ МАГАЗИН] Учень {buyer_name} (ID: `{buyer_id}`) купив досягнення за 250 Сімок!**\n\nТекст медалі:\n«_{ach_text}_»\n\nЩо робимо, Босс?",
+                reply_markup=confirm_markup
+            )
+            await message.answer("✅ **Запит на купівлю медалі успішно надіслано Макару!** Якщо він відхилить — 250 Сімок повернуться на твій баланс.")
+        except Exception:
+            await message.answer("❌ Помилка зв'язку з сервером премодерації.")
+        return
+        
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
     name = state_data.get("ach_target_name")
+    if name not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[name] = []
+    USER_ACHIEVEMENTS[name].append(message.text)
+    await message.answer(f"✅ Досягнення успішно додано для **{name}**!")
+    await state.clear()
+
     
     if name not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[name] = []
     USER_ACHIEVEMENTS[name].append(message.text)
@@ -1057,6 +1098,45 @@ async def handle_admin_panel(message: Message):
         await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
     else: 
         await message.answer("🛑 Немає доступу.")
+
+@router.callback_query(F.data.startswith("buyach_"))
+async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id != 8791830931: return
+    await callback.answer()
+    
+    raw_cmd = callback.data.replace("buyach_", "").split("_")
+    action, buyer_id = raw_cmd, int(raw_cmd)
+    
+    state_data = await state.get_data()
+    ach_text = state_data.get("pending_ach_text", "🏆 Нове досягнення")
+    tax = state_data.get("buyer_tax", 75)
+    buyer_name = USER_TELEGRAM_NAMES.get(buyer_id, "Учень")
+    
+    if action == "approve":
+        username_key = ""
+        for username, u_name in USER_USERNAMES_TEXT.items():
+            u_id = USER_USERNAMES.get(username.lower(), 0)
+            if u_id == buyer_id: username_key = u_name; break
+        if not username_key: username_key = buyer_name
+        
+        if username_key not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[username_key] = []
+        USER_ACHIEVEMENTS[username_key].append(ach_text)
+        
+        try: await bot.send_message(chat_id=buyer_id, text=f"🎉 **Макар схвалив твою покупку!**\n\nНове досягнення «{ach_text}» додано у твій профіль!")
+        except Exception: pass
+        await callback.message.edit_text(f"🟢 **Успішно схвалено!** Медаль видана {username_key}. Налог 30% ({tax} Сімок) зафіксовано на балансах адмінів!")
+    
+    elif action == "reject":
+        USER_BALANCES[buyer_id] = USER_BALANCES.get(buyer_id, 0) + 250
+        USER_BALANCES[8791830931] -= tax
+        for l4_id in ADMIN_L4_IDS:
+            if l4_id != 8791830931: USER_BALANCES[l4_id] -= tax
+            
+        try: await bot.send_message(chat_id=buyer_id, text=center("❌ **Макар відхилив твій запит на досягнення!**\n\nТекст не пройшов цензуру. 250 Сімок повністю повернуто на твій баланс."))
+        except Exception: pass
+        await callback.message.edit_text(f"❌ **Ви відхилили запит.** 250 Сімок повернуто учню на базу, податок скасовано.")
+        
+    await state.clear()
 
 async def main():
     logging.basicConfig(level=logging.INFO)
