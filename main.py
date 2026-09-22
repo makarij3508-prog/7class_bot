@@ -1145,7 +1145,7 @@ async def universal_pay_system_command(message: Message):
     args = message.text.split()
     
     if len(args) < 3:
-        await message.answer("⚠️ **Формат переказу Сімок:**\n`/pay @username кількість повідомлення`\n\nПриклад:\n`/pay @marri_chk 250 для любимої` 💌")
+        await message.answer("⚠️ **Формат переказу Сімок:**\n`/pay @username кількість повідомлення`\n\nПриклад:\n`/pay @marri_chk 250 за всё хорошее)")
         return
         
     target_username = args[1].strip().lower()
