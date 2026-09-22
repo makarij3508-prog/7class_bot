@@ -197,8 +197,12 @@ async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username
     
- user_id not in USER_BALANCES:
-        USER_BALANCES[user_id] = 10  
+    if user_id not in USER_BALANCES:
+        USER_BALANCES[user_id] = 10
+        
+    if username:
+        user_key = f"@{username.lower()}"
+
     
     if username:
         user_key = f"@{username.lower()}"
