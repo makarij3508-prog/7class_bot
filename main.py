@@ -1114,7 +1114,8 @@ async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMConte
     await callback.answer()
     
     raw_cmd = callback.data.replace("buyach_", "").split("_")
-    action, buyer_id = raw_cmd, int(raw_cmd)
+    action = raw_cmd
+    buyer_id = int(raw_cmd)
     
     state_data = await state.get_data()
     ach_text = state_data.get("pending_ach_text", "🏆 Нове досягнення")
@@ -1122,6 +1123,7 @@ async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMConte
     buyer_name = USER_TELEGRAM_NAMES.get(buyer_id, "Учень")
     
     if action == "approve":
+        # Шукаємо текстове ім'я учня для правильного запису в базу медалей RANDOM_NAMES
         username_key = ""
         for username, u_name in USER_USERNAMES_TEXT.items():
             u_id = USER_USERNAMES.get(username.lower(), 0)
@@ -1131,19 +1133,32 @@ async def process_macar_shop_moderation(callback: CallbackQuery, state: FSMConte
         if username_key not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[username_key] = []
         USER_ACHIEVEMENTS[username_key].append(ach_text)
         
-        try: await bot.send_message(chat_id=buyer_id, text=f"🎉 **Макар схвалив твою покупку!**\n\nНове досягнення «{ach_text}» додано у твій профіль!")
+        # 💸 ЖОРСТКИЙ ФІКС: Нараховуємо податок чітко на твій особистий ID!
+        if 8791830931 not in USER_BALANCES: USER_BALANCES = 0
+        USER_BALANCES += tax
+        
+        # Поповнюємо баланс усім діючим адмінам Л4
+        for l4_id in ADMIN_L4_IDS:
+            if l4_id != 8791830931:
+                USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax
+        
+        try: 
+            await bot.send_message(chat_id=buyer_id, text=f"🎉 **Макар схвалив твою покупку!**\n\nНове досягнення «{ach_text}» успішно додано у твій профіль!")
         except Exception: pass
-        await callback.message.edit_text(f"🟢 **Успішно схвалено!** Медаль видана {username_key}. Налог 30% ({tax} Сімок) зафіксовано на балансах адмінів!")
+        
+        await callback.message.edit_text(f"🟢 **Успішно схвалено!** Медаль «{ach_text}» офіційно видана для {username_key}.\n💸 Тобі та адмінам нараховано податок: **+{tax} Сімок** 🪙!")
     
     elif action == "reject":
+        # ПОВНИЙ БЕК СІМОК УЧНЮ НА БАЗУ, ЯКЩО ВІДХИЛИВ ЗАПИТ
         USER_BALANCES[buyer_id] = USER_BALANCES.get(buyer_id, 0) + 250
-        USER_BALANCES[8791830931] -= tax
-        for l4_id in ADMIN_L4_IDS:
-            if l4_id != 8791830931: USER_BALANCES[l4_id] -= tax
-            
-        try: await bot.send_message(chat_id=buyer_id, text=center("❌ **Макар відхилив твій запит на досягнення!**\n\nТекст не пройшов цензуру. 250 Сімок повністю повернуто на твій баланс."))
+        try: 
+            await bot.send_message(chat_id=buyer_id, text="❌ **Макар відхилив твій запит на досягнення!**\n\nТекст медалі не пройшов ЦРУ-цензуру. 250 Сімок повністю повернуто на твій баланс.")
         except Exception: pass
-        await callback.message.edit_text(f"❌ **Ви відхилили запит.** 250 Сімок повернуто учню на базу, податок скасовано.")
+        
+        await callback.message.edit_text(f"❌ **Ви відхилили запит.** 250 Сімок повністю повернуто учню на базу, податок анульовано.")
+        
+    await state.clear()
+
         
     await state.clear()
 @router.message(Command("pay"))
