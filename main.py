@@ -70,7 +70,7 @@ RANDOM_NAMES = [
 USER_ACHIEVEMENTS = {name: ["🥈 Активний учень 7-В класу"] for name in RANDOM_NAMES}
 
 USER_USERNAMES_TEXT = {
-    "@llona_x": "Ілона", "@selarkin": "Роман", "@play.funtime.su": "Едуард",
+    "@ilona_x": "Ілона", "@selarkin": "Роман", "@play.funtime.su": "Едуард",
     "@marri_chk": "Марічка", "@myveronichkam": "Вероніка", "@Red_tea21": "Назарій",
     "@Mi42a": "Мирослава", "@sanichka_gg": "Олександр", "@shadow123446": "Емілія",
     "@ezhik_lite": "Артем", "@Vladore1488": "Колодинський Богдан", "@Sharik_xd": "Ковальчук Богдан",
