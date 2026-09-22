@@ -13,27 +13,20 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
-# ==========================================
-# 🚨 КРИТИЧНА КОНФІГУРАЦІЯ СИСТЕМИ v2.5 (7-В)
-# ==========================================
-
-# 🔌 ТВІЙ ОФІЦІЙНИЙ ТОКЕН БОТА (БЕЗПЕЧНО ЗАМАСКОВАНИЙ ВІД БАНІВ ГІТХАБУ)
 BOT_TOKEN = "8735817305:AAEzAlm9A4H" + "HYu7AojGXV-FI2pB1GcXJS8k"
 
-# 👑 TVІЙ ЖОРСТКИЙ ID СУПЕР-АДМІНА (МАКАР — ГОЛОВНИЙ РОЗРОБНИК РІВНЯ 5)
 SUPER_ADMIN_IDS = [8791830931]
 
-# 🪪 СИСТЕМА ДИНАМІЧНИХ ПРАВ ПО ЮЗЕРНЕЙМАХ (КЕРУЄТЬСЯ З АДМІНКИ)
+
 ADMIN_L4_USERNAMES = ["@пример_админа_л4"]  
 MODERATOR_USERNAMES = []                     
 STAROSTA_USERNAMES = []                      
 ASSISTANT_USERNAMES = []                     
 TESTER_USERNAMES = []                        
 
-# 👑 ОФІЦІЙНА РОЛЬ КЛАСНОГО КЕРІВНИКА (ІМУНІТЕТ ТА АВТО-РАПОРТИ)
 TEACHER_USERNAME = "@victoria197198"
 
-# 📊 ВНУТРІШНІ ДИНАМІЧНІ СПИСКИ ID (ЗАПОВНЮЮТЬСЯ І ЗМІНЮЮТЬСЯ В АДМІНКИ)
+
 ADMIN_L4_IDS = []
 MODERATOR_IDS = []
 HW_ASSISTANT_IDS = []
@@ -41,26 +34,24 @@ STAROSTA_IDS = []
 TESTER_IDS = []
 TEACHER_CHAT_ID = 0
 
-# 🔗 СЛОВНИКИ ДЛЯ СИНХРОНІЗАЦІЇ ІМЕН ТА ID УЧНІВ
+
 USER_TELEGRAM_NAMES = {8791830931: "Макар"}
 USER_USERNAMES = {}
 
-# 💬 БАЗА ДАНИХ ШКІЛЬКОГО ЧАТУ, МУТІВ ТА БАНІВ
+
 CHAT_REGISTERED_USERS = {}  
 BANNED_USERS = []           
 MUTED_USERS = {}            
 
-# 🪙 ЕКОНОМІЧНА БАЗА ДАНИХ v2.5 (СІМКИ В 7-В)
+
 USER_BALANCES = {}          
 USER_LAST_CASE = {}         
 USER_CUSTOM_TAGS = {}       
 USER_ITEMS = {}             
 
-# 🎭 СИСТЕМА ТАЄМНОГО ШПИГУНА 7-В
 CURRENT_SECRET_AGENT_ID = 0   
 AGENT_HAS_SENT_SECRET = False  
 
-# 🛠️ СИСТЕМНІ СТАТУСИ ТА ДАНІ КОНТЕНТУ
 IS_TESTING_MODE = False
 IMPORTANT_ANNOUNCEMENT = "📌 **Важливі оголошення:**\n\nНаразі немає нових оголошень від адміністрації або Бакланової Вікторії Олександрівни."
 BOOKS_DATA = "📚 **Електронні підручники для 7-В класу (НУШ):**\n\nСкористайтеся меню налаштувань або введіть запити в Гугл з командою site:pidruchnyk.com.ua"
@@ -68,9 +59,7 @@ ABSENT_TODAY_LIST = []
 RANDOM_MODE = "dice"
 HOMEWORK_DATA = {}          
 
-# ==========================================
-# 👥 ППОВНА БАЗА ДАНИХ ТВОГО КЛАСУ (28 УЧНІВ)
-# ==========================================
+
 RANDOM_NAMES = [
     "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
@@ -88,7 +77,6 @@ USER_USERNAMES_TEXT = {
     "@victoria197198": "Бакланова Вікторія Олександрівна"
 }
 
-# 🗓️ ШКІЛЬНИЙ РОЗКЛАД УРОКІВ 7-В (З УСІМА ПРЕДМЕТАМИ)
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
     "tue": "🗓️ **Вівторок:**\n1. Історія України\n2. Біологія\n3. Геометрія\n4. Укр. мова\n5. ЗБД\n6. Інформатика\n7. Технології",
@@ -97,7 +85,6 @@ SCHEDULE_DATA = {
     "fri": "🗓️ **П'ятниця:**\n1. Історія України\n2. Мистецтво\n3. Англійська\n4. Укр. література\n5. Фізкультура\n6. Біологія\n7. Алгебра"
 }
 
-# 📚 ПОВНИЙ СЛОВНИК ПРЕДМЕТІВ З ТЕХНОЛОГІЯМИ ТА ЗАРУБЕЖКОЮ
 SUBJECT_NAMES = {
     "algebra": "📐 Алгебра", "geometry": "📐 Геометрія", "physics": "🧲 Фізика", "chemistry": "🧪 Хімія",
     "biology": "🧬 Біологія", "geography": "🌍 Географія", "hist_ua": "📜 Історія України", "hist_world": "🏰 Всесвітня історія",
@@ -115,9 +102,6 @@ PREDICTIONS = [
     "🍀 На укр. мові тебе сьогодні омине виклик до дошки. Везунчик!"
 ]
 
-# ==========================================
-# ⚙️ МАШИНА СТАНІВ (FSM) ТА РОЗУМНІ КЛАВІАТУРИ
-# ==========================================
 
 class BotStates(StatesGroup):
     waiting_for_question = State()          
@@ -207,10 +191,6 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
 
 async def send_human_message(message: Message, text: str, reply_markup=None):
     return await message.answer(text, reply_markup=reply_markup)
-
-# ==========================================
-# 📖 ОСНОВНІ КОМАНДИ ТА ХЕНДЛЕРИ КОРИСТУВАЧІВ
-# ==========================================
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
@@ -335,9 +315,7 @@ async def ask_free_ai(question: str) -> str:
                 return "⚠️ Сервер ШІ тимчасово перевантажений."
     except Exception: return "❌ Наразі ШІ відпочиває. Спробуйте пізніше!"
 
-# ==========================================
-# 🎁 ПОДАРУНКИ, МОДЕРОВАНИЙ ЧАТ ТА БІРЖА v2.6
-# ==========================================
+
 
 @router.callback_query(F.data == "economy_get_gift")
 async def process_get_daily_gift(callback: CallbackQuery):
@@ -571,9 +549,6 @@ async def process_sell_stock(callback: CallbackQuery):
     USER_BALANCES[user_id] = USER_BALANCES.get(user_id, 0) + price
     await callback.message.answer(f"📈 **Угода успішна!** Продано 1 акцію **{stock_name.upper()}** за **{price} Сімок**!"); await callback.answer()
 
-# ==========================================
-# 👑 АДМІНІСТРАТИВНИЙ КОРПУС ТА ВЕЧНЕ ДЗ v2.6 (ОНОВЛЕНО НА ANSWER)
-# ==========================================
 
 def get_user_current_level(name: str) -> int:
     target_username = ""
@@ -732,9 +707,6 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
     await callback.answer()
 
-# ==========================================
-# 🔔 СИСТЕМА ДЗВІНКІВ ТА ЗАПУСК RENDER v2.6
-# ==========================================
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
@@ -743,7 +715,7 @@ async def process_smart_school_bells(callback: CallbackQuery):
         await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
     current_minutes = now.hour * 60 + now.minute
     
-    # ⏰ РОЗКЛАД: ЧОТИРИ ПЕРЕРВИ ПО 20 ХВИЛИН, РЕШТА ПО 10 ХВИЛИН!
+
     schedule_blocks = [
         {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
         {"lesson": 3, "start": 10*60+40, "end": 11*60+25},  {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
@@ -808,9 +780,6 @@ async def handle_admin_panel(message: Message):
         await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
     else: await message.answer("🛑 Немає доступу.")
 
-# ==========================================
-# 📝 АДМІН-ХЕНДЛЕРИ КОНТЕНТУ v2.6 (НОВІ ANSWER-ПОВІДОМЛЕННЯ)
-# ==========================================
 
 def save_homework_to_file():
     try:
@@ -898,14 +867,10 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
     await callback.answer()
 
-# ==========================================
-# 🔔 РОЗУМНІ ДЗВІНКИ ТА СИСТЕМНИЙ ЗАПУСК v2.6
-# ==========================================
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
     await callback.answer(); now = datetime.now(); weekday = now.weekday()
-        # 🚨 ОЛІМПІАДНИЙ ФІКС ЧАСУ: Коригуємо серверний час Render на +3 години під Україну
     ua_hour = (now.hour + 3) % 24
 
     if weekday >= 5:
@@ -913,7 +878,6 @@ async def process_smart_school_bells(callback: CallbackQuery):
    current_minutes = ua_hour * 60 + now.minute
 
     
-    # ⏰ ГРАФІК: 4 ПЕРЕРВИ ПО 20 ХВИЛИН, РЕШТА ПО 10 ХВИЛИН!
     schedule_blocks = [
         {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
         {"lesson": 3, "start": 10*60+40, "end": 11*60+25},  {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
