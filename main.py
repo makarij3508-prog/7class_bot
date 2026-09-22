@@ -703,33 +703,43 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     if callback.from_user.id != 8791830931: return
     global IS_TESTING_MODE
     IS_TESTING_MODE = not IS_TESTING_MODE
-    status_text = "🟢 ОН" if IS_TESTING_MODE else "🔴 ОФФ"
+    status_text = "🟢 ON" if IS_TESTING_MODE else "🔴 OFF"
     await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
     await callback.answer()
 
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
-    await callback.answer(); now = datetime.now(); weekday = now.weekday()
+    await callback.answer()
+    from datetime import timedelta
+    now = datetime.now() + timedelta(hours=3)
+    weekday = now.weekday()
     if weekday >= 5:
-        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
-    current_minutes = now.hour * 60 + now.minute
-    
-
+        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu)
+        return
+    ua_hour = now.hour
+    current_minutes = ua_hour * 60 + now.minute
     schedule_blocks = [
-        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},   {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
-        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},  {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
-        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},  {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
+        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},
+        {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
+        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},
+        {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
+        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},
+        {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
         {"lesson": 7, "start": 14*60+40, "end": 15*60+25}
     ]
     if current_minutes < schedule_blocks[0]["start"]:
-        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu); return
+        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu)
+        return
     if current_minutes > schedule_blocks[-1]["end"]:
-        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти! 🛑🔥", reply_markup=settings_interactive_menu); return
+        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки на сьогодні закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти на вулицю! 🛑🔥", reply_markup=settings_interactive_menu)
+        return
     for block in schedule_blocks:
         if block["start"] <= current_minutes <= block["end"]:
-            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nІди вчись, не відволікайся! 👨‍💻❌📱", reply_markup=settings_interactive_menu); return
-    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
+            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Урок закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nПовністю фокусуйся на навчанні, відклади телефон і **іди вчись, не відволікайся!** 👨‍💻❌📱", reply_markup=settings_interactive_menu)
+            return
+    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕРВА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою, подихай свіжим повітрям і готуйся до наступного уроку! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
+
 
 @router.callback_query(F.data == "economy_back_to_settings")
 async def process_back_to_settings_callback(callback: CallbackQuery):
