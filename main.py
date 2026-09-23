@@ -980,6 +980,40 @@ async def process_admin_ach_action(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(f"✍️ Введіть текст нового досягнення (з емодзі) для учня **{name}**:")
         await state.set_state(BotStates.admin_input_achievement)
 
+@router.message(F.text.startswith("/give_coins"))
+async def macar_universal_give_coins(message: Message):
+    if message.from_user.id != 8791830931: return
+    
+    args = message.text.split()
+    if len(args) < 3:
+        await message.answer("⚠️ **Формат команди:**\n`/give_coins @username_або_ID кількість`\n\nПриклади:\n• `/give_coins @ezhik_lite 1500` (Артему)\n• `/give_coins me 50000` (Собі коханому)")
+        return
+        
+    target_raw = args[1].strip()
+    try:
+        amount = int(args[2])
+    except ValueError:
+        await message.answer("❌ Кількість монет має бути цілем числом!")
+        return
+        
+    target_id = 0
+    if target_raw.lower() == "me" or target_raw == "8791830931":
+        target_id = 8791830931
+    elif target_raw.isdigit():
+        target_id = int(target_raw)
+    else:
+        target_username = target_raw.lower()
+        target_id = USER_USERNAMES.get(target_username, 0)
+        
+    if target_id == 0:
+        await message.answer(f"❌ **Користувача {target_raw} не знайдено!**")
+        return
+        
+    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
+    await message.answer(f"🪙 **Успішно нараховано!**\n\nРахунок `{target_raw}` поповнено на **+{amount} Сімок** 🪙!")
+    try:
+        await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Розробник Макар нарахував тобі **{amount} Сімок**! 🪙")
+    except Exception: pass
 
 async def main():
     logging.basicConfig(level=logging.INFO)
