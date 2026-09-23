@@ -488,7 +488,7 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         return
         
-    USER_BALANCES[user_id] -= price
+        USER_BALANCES[user_id] -= price
     
     tax_amount = int(price * 0.3)
     USER_BALANCES[8791830931] = USER_BALANCES.get(8791830931, 0) + tax_amount
@@ -499,11 +499,11 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
-        await callback.message.answer(f"🃏 **Купівля успішна!** Придбано Шпаргалку (+30% до дуелей)!")
+        await callback.message.answer(f"🃏 **Купівля успішна!** Придбано Шпаргалку.\n💸 Макару та Адмінам сплачено податок: **{tax_amount} Сімок**!")
     elif item == "antimut":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("antimut")
-        await callback.message.answer(f"🛡️ **Купівля успішна!** Придбано Одноразовий Анти-Мут.!")
+        await callback.message.answer(f"🛡️ **Купівля успішна!** Придбано Анти-Мут.\n💸 Макару та Адмінам сплачено податок: **{tax_amount} Сімок**!")
     elif item == "customtag":
         await callback.message.answer(f"🏷️ **Купівля успішна!** Сплачено податок {tax_amount} 🪙.\nВведіть текст вашого кастомного тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
@@ -511,9 +511,6 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("💸 **250 Сімок зарезервовано!**\n\n✍️ Тепер введіть текст досягнення (з емодзі), яке ви хочете собі купити:")
         await state.set_state(BotStates.admin_input_achievement)
         await state.update_data(buyer_user_id=user_id, buyer_tax=tax_amount)
-
-    await callback.answer()
-
 
 @router.message(BotStates.waiting_for_custom_tag)
 async def process_save_custom_tag(message: Message, state: FSMContext):
