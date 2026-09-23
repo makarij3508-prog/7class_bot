@@ -507,7 +507,7 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     elif item == "customtag":
         await callback.message.answer(f"🏷️ **Купівля успішна!** Сплачено податок {tax_amount} 🪙.\nВведіть текст вашого кастомного тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
-      elif item == "achievement_pack":
+    elif item == "achievement_pack":
         await callback.message.answer("💸 **250 Сімок зарезервовано!**\n\n✍️ Тепер введіть текст досягнення (з емодзі), яке ви хочете собі купити:")
         await state.set_state(BotStates.admin_input_achievement)
         await state.update_data(buyer_user_id=user_id, buyer_tax=tax_amount)
