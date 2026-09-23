@@ -1015,6 +1015,67 @@ async def macar_universal_give_coins(message: Message):
         await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Розробник Макар нарахував тобі **{amount} Сімок**! 🪙")
     except Exception: pass
 
+@router.message(F.text.startswith("/pay"))
+async def universal_pay_system_command(message: Message):
+    user_id = message.from_user.id
+    args = message.text.split()
+    
+    if len(args) < 3:
+        await message.answer("⚠️ **Формат переказу Сімок:**\n`/pay @username_або_ID кількість повідомлення`\n\nПриклади:\n• `/pay @ilona_x 250 для любимої` 💌\n• `/pay 8791830931 500 на булочку` 🍔")
+        return
+        
+    target_raw = args[1].strip()
+    try:
+        amount = int(args[2])
+    except ValueError:
+        await message.answer("❌ Кількість монет має бути цілим числом!")
+        return
+        
+    if amount <= 0:
+        await message.answer("❌ Сума переказу має бути більшою за 0!")
+        return
+        
+    sender_balance = USER_BALANCES.get(user_id, 0)
+    if user_id != 8791830931 and sender_balance < amount:
+        await message.answer(f"❌ **Недостатньо Сімок!** Твій поточний баланс: **{sender_balance} Сімок** 🪙.")
+        return
+        
+    target_id = 0
+    if target_raw.isdigit():
+        target_id = int(target_raw)
+        if target_id not in USER_BALANCES: USER_BALANCES[target_id] = 0
+    else:
+        target_username = target_raw.lower()
+        if not target_username.startswith("@"):
+            target_username = f"@{target_username}"
+        target_id = USER_USERNAMES.get(target_username, 0)
+        
+    if target_id == 0:
+        await message.answer(f"❌ **Користувача {target_raw} не знайдено в базі!** Він повинен хоча б раз натиснути `/start` у боті.")
+        return
+        
+    if target_id == user_id:
+        await message.answer("🧠 Хитрун! Не можна переводити Сімки самому собі!")
+        return
+        
+    comment_text = " ".join(args[3:]) if len(args) > 3 else "Без коментаря"
+    
+    if user_id != 8791830931:
+        USER_BALANCES[user_id] -= amount
+        
+    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
+    sender_name = USER_TELEGRAM_NAMES.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
+    
+    await message.answer(f"💸 **Переказ успішний!**\n\nВи відправили **{amount} Сімок** 🪙 для `{target_raw}`.\n💬 Коментар: «_{comment_text}_»")
+    
+    try:
+        await bot.send_message(
+            chat_id=target_id,
+            text=f"🎁 **Тобі прилетів грошовий переказ!**\n\n👤 **Відправник:** {sender_name}\n🪙 **Сума:** +{amount} Сімок\n💌 **Повідомлення:** «_{comment_text}_»\n\nПеревір свій оновлений баланс у налаштуваннях! 🎉"
+        )
+    except Exception: pass
+
+
 async def main():
     logging.basicConfig(level=logging.INFO)
     dp.include_router(router)
