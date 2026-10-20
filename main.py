@@ -402,23 +402,83 @@ async def exit_chat_room(message: Message, state: FSMContext):
     await send_human_message(message, "🚪 Ви вийшли з чату.", reply_markup=get_main_menu(message.from_user.id))
 
 @router.message(BotStates.user_in_chat_window)
-async def process_live_chat_message(message: Message):
+async def process_live_chat_message(message: Message, state: FSMContext):
     user_id = message.from_user.id
     if message.text == "🚪 Вийти з чату" or user_id in BANNED_USERS: return
     if user_id in MUTED_USERS and datetime.now().timestamp() < MUTED_USERS[user_id]:
-        await message.answer("🤫 **У вас МУТ!**"); return
-    sender_name = CHAT_REGISTERED_USERS.get(user_id, "Учень")
+        await message.answer("🤫 **У вас МУТ!** Вы не можете писать в чат."); return
+        
+    sender_name = CHAT_REGISTERED_USERS.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
+    
+    # ⚔️ СИСТЕМА ГЛАДІАТОРСЬКИХ ДУЕЛЕЙ НА СІМКИ ДЛЯ ВСЬОГО КЛАСУ v3.0
+    if message.text.startswith("/duel"):
+        args = message.text.split()
+        if len(args) < 3:
+            await message.answer("⚠️ **Формат дуелі:** `/duel @username кількість` (наприклад: `/duel @ezhik_lite 100`) ⚔️")
+            return
+            
+        target_username = args[1].lower()
+        try:
+            duel_amount = int(args[2])
+        except ValueError:
+            await message.answer("❌ Сума дуелі має бути цілим числом!")
+            return
+            
+        if duel_amount <= 0:
+            await message.answer("❌ Сума виклику має бути більшою за 0 Сімок!")
+            return
+            
+        sender_balance = USER_BALANCES.get(user_id, 0)
+        if user_id != 8791830931 and sender_balance < duel_amount:
+            await message.answer(f"❌ **Недостатньо коштів!** Твій баланс: {sender_balance} Сімок.")
+            return
+            
+        target_id = USER_USERNAMES.get(target_username, 0)
+        if target_id == 0:
+            await message.answer(f"❌ Учня {target_username} не знайдено в базі! Він повинен хоча б раз натиснути `/start` у боті.")
+            return
+            
+        if target_id == user_id:
+            await message.answer("🧠 Ти не можеш викликати на дуель самого себе!")
+            return
+            
+        # Бронюємо Сімки у ініціатора дуелі (якщо це не Макар з нескінченним читом)
+        if user_id != 8791830931:
+            USER_BALANCES[user_id] -= duel_amount
+            
+        # Записуємо дані дуелі у глобальну пам'ять для інлайн-кнопки супротивника
+        if "active_duels" not in globals(): global active_duels; active_duels = {}
+        active_duels[target_id] = {"challenger_id": user_id, "challenger_name": sender_name, "bet": duel_amount}
+        
+        duel_markup = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=f"⚔️ Прийняти виклик на {duel_amount} Сімок", callback_data=f"acceptduel_{target_id}")]
+        ])
+        
+        # Рассылаем вызов всем участникам активного чата класса
+        for t_id in list(CHAT_REGISTERED_USERS.keys()):
+            try:
+                await bot.send_message(
+                    chat_id=t_id,
+                    text=f"🚨 **ГЛАДІАТОРСЬКИЙ ВИКЛИК!**\n\n👤 Учень **{sender_name}** викликає на дуель **{target_username}**!\n🪙 Ставка: **{duel_amount} Сімок**! 🤼‍♂️\n\nЩо відповість супротивник?",
+                    reply_markup=duel_markup
+                )
+            except Exception: pass
+        return
+
+    # Звичайні повідомлення чату (Старий робочий код з префіксами та чатлогами)
     custom_tag = USER_CUSTOM_TAGS.get(user_id, "")
     prefix_text = f"[{custom_tag}] " if custom_tag else ""
     for target_id in list(CHAT_REGISTERED_USERS.keys()):
         if target_id != user_id:
             try: await bot.send_message(chat_id=target_id, text=f"💬 **{prefix_text}{sender_name}:** {message.text}")
             except Exception: pass
+            
     all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
     punish_keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🤫 Мут 15 хв", callback_data=f"mute_15_{user_id}_{sender_name}"), InlineKeyboardButton(text="🛑 БАН", callback_data=f"ban_{user_id}_{sender_name}")]])
     for admin_id in all_admins:
         try: await bot.send_message(chat_id=admin_id, text=f"👁️ **[ЧАТЛОГ] {prefix_text}{sender_name}:** {message.text}", reply_markup=punish_keyboard)
         except Exception: pass
+
 
 @router.message(F.text == "🤫 Секретний Злив")
 async def secret_leak_start(message: Message, state: FSMContext):
@@ -811,6 +871,66 @@ async def process_top_sheikhs(callback: CallbackQuery):
         if count > 10: break
     top_text += "\n📊 _Заробляй Сімки кожного дня, роби перекази та купуй преміум лут, щоб очолити фінансовий рейтинг класу!_"
     await callback.message.edit_text(text=top_text, reply_markup=settings_interactive_menu)
+
+@router.callback_query(F.data.startswith("acceptduel_"))
+async def process_accept_gladiator_duel(callback: CallbackQuery):
+    target_id = callback.from_user.id
+    raw_cmd = callback.data.replace("acceptduel_", "")
+    
+    if int(raw_cmd) != target_id:
+        await callback.answer("❌ Цей виклик кинуто не тобі!", show_alert=True)
+        return
+        
+    if "active_duels" not in globals() or target_id not in active_duels:
+        await callback.answer("⚠️ Дуель вже застаріла або скасована!")
+        return
+        
+    duel_data = active_duels.pop(target_id)
+    challenger_id = duel_data["challenger_id"]
+    challenger_name = duel_data["challenger_name"]
+    bet = duel_data["bet"]
+    
+    target_balance = USER_BALANCES.get(target_id, 0)
+    if target_id != 8791830931 and target_balance < bet:
+        await callback.answer("❌ У тебе недостатньо Сімок, щоб прийняти цю дуель!", show_alert=True)
+        # Повертаємо Сімки ініціатору виклику
+        if challenger_id != 8791830931: USER_BALANCES[challenger_id] += bet
+        return
+        
+    await callback.answer()
+    
+    # Списуємо ставку у того, хто прийняв виклик
+    if target_id != 8791830931:
+        USER_BALANCES[target_id] -= bet
+        
+    target_name = CHAT_REGISTERED_USERS.get(target_id, callback.from_user.first_name)
+    
+    # 🎲 КИДАЄМО КУБИКИ РАНДОМУ ДЛЯ ОБОХ ГЛАДІАТОРІВ!
+    roll_1 = random.randint(1, 6)
+    roll_2 = random.randint(1, 6)
+    
+    while roll_1 == roll_2:  # Виключаємо нічию, крутимо до перемоги!
+        roll_2 = random.randint(1, 6)
+        
+    win_pool = bet * 2
+    
+    if roll_1 > roll_2:
+        # Переміг Ініціатор виклику (Challenger)
+        USER_BALANCES[challenger_id] = USER_BALANCES.get(challenger_id, 0) + win_pool
+        winner_name = challenger_name
+        loser_name = target_name
+    else:
+        # Переміг Той, хто прийняв виклик (Target)
+        USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + win_pool
+        winner_name = target_name
+        loser_name = challenger_name
+        
+    result_text = f"⚔️ **ГЛАДІАТОРСЬКА ДУЕЛЬ ЗАВЕРШЕНА!** 🤼‍♂️\n\n👑 **Переможець:** {winner_name} (Викинув: {max(roll_1, roll_2)} 🎲)\n📉 **Програв:** {loser_name} (Викинув: {min(roll_1, roll_2)} 🎲)\n\n💰 Весь банк у розмірі **+{win_pool} Сімок** 🪙 успішно зараховано на баланс лідера!"
+    
+    for t_id in list(CHAT_REGISTERED_USERS.keys()):
+        try:
+            await bot.send_message(chat_id=t_id, text=result_text)
+        except Exception: pass
 
 
 async def main():
