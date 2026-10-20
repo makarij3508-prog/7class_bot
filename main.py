@@ -190,8 +190,10 @@ def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
     [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
+    [InlineKeyboardButton(text="👑 Топ Шейхів класу", callback_data="economy_top_sheikhs")],
     [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
+
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
@@ -311,8 +313,11 @@ async def process_get_daily_gift(callback: CallbackQuery):
 @router.callback_query(F.data == "economy_open_shop")
 async def process_open_shop(callback: CallbackQuery):
     await callback.message.edit_text(text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{USER_BALANCES.get(callback.from_user.id, 0)} Сімок** 🪙\n📊 _З кожної покупки стягується подарунок 30% на користь Макара та Адмінів!_", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")], [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
-        [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")], [InlineKeyboardButton(text="🏆 Купити Досягнення (250 Сімок)", callback_data="buy_achievement_pack")],
+        [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")], 
+        [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
+        [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")], 
+        [InlineKeyboardButton(text="🕵️‍♂️ Найняти Детектива (200 Сімок)", callback_data="buy_detective")],
+        [InlineKeyboardButton(text="🏆 Купити Досягнення (250 Сімок)", callback_data="buy_achievement_pack")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
     ]))
     await callback.answer()
