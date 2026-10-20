@@ -4,7 +4,7 @@ import random
 import os
 import aiohttp
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 from aiogram.filters import Command
@@ -13,19 +13,19 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
+# ==========================================
+# 🚨 КРИТИЧНА КОНФІГУРАЦІЯ СИСТЕМИ v2.7 (7-В)
+# ==========================================
+
 BOT_TOKEN = "8735817305:AAEzAlm9A4H" + "HYu7AojGXV-FI2pB1GcXJS8k"
-
 SUPER_ADMIN_IDS = [8791830931]
-
 
 ADMIN_L4_USERNAMES = ["@пример_админа_л4"]  
 MODERATOR_USERNAMES = []                     
 STAROSTA_USERNAMES = []                      
 ASSISTANT_USERNAMES = []                     
 TESTER_USERNAMES = []                        
-
 TEACHER_USERNAME = "@victoria197198"
-
 
 ADMIN_L4_IDS = []
 MODERATOR_IDS = []
@@ -34,23 +34,19 @@ STAROSTA_IDS = []
 TESTER_IDS = []
 TEACHER_CHAT_ID = 0
 
-
 USER_TELEGRAM_NAMES = {8791830931: "Макар"}
 
+# 🗄️ ОЛІМПІАДНА БАЗА ДАНИХ ID УЧНІВ (ЗВ'ЯЗОК ЮЗЕРНЕЙМ -> TELEGRAM ID)
 USER_USERNAMES = {
     "@macar_dev_temp": 8791830931,
-    "@red_tea21": 5543210987,
-    "@ezhik_lite": 441394079,  
+    "@ezhik_lite": 441394079,   # ID Артема (ArtemYch)
     "@ilona_x": 1122334455,
     "@marri_chk": 9988776655
 }
 
-
-
 CHAT_REGISTERED_USERS = {}  
 BANNED_USERS = []           
 MUTED_USERS = {}            
-
 
 USER_BALANCES = {}          
 USER_LAST_CASE = {}         
@@ -67,15 +63,14 @@ ABSENT_TODAY_LIST = []
 RANDOM_MODE = "dice"
 HOMEWORK_DATA = {}          
 
-
 RANDOM_NAMES = [
-    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковальчук Богдан", 
+    "Олександр", "Андрій", "Данило", "Колодинський Богдан", "Ковалевчук Богдан", 
     "Мирослава", "Матвій", "Софія", "Михайло", "Макар", "Ілона", "Марічка", 
     "Маргарита", "Ангеліна", "Нікіта", "Альберт", "Єва", "Роман", "Владислав", 
     "Назарій", "Едуард", "Станіслав", "Артем", "Емілія", "Вероніка", "Ілля", "Дмитро", "Макс"
 ]
 
-USER_ACHIEVEMENTS = {name: ["🥈 Активний учень 7-В класу"] for name in RANDOM_NAMES}
+USER_ACHIEVEMENTS = {name: ["🥈 \u0410\u043a\u0442\u0438\u0432\u043d\u0438\u0439 \u0443\u0447\u0435\u043d\u044c 7-\u0412 \u043a\u043b\u0430\u0441\u0443"] for name in RANDOM_NAMES}
 
 USER_USERNAMES_TEXT = {
     "@ilona_x": "Ілона", "@selarkin": "Роман", "@play.funtime.su": "Едуард",
@@ -96,7 +91,7 @@ SCHEDULE_DATA = {
 SUBJECT_NAMES = {
     "algebra": "📐 Алгебра", "geometry": "📐 Геометрія", "physics": "🧲 Фізика", "chemistry": "🧪 Хімія",
     "biology": "🧬 Біологія", "geography": "🌍 Географія", "hist_ua": "📜 Історія України", "hist_world": "🏰 Всесвітня історія",
-    "lang_ua": "🇺🇦 Укр. мова", "lit_ua": "📚 Укр. літ.", "english": "🇬🇧 Англійська", "lit_world": "🗺️ Зарубіжна літ.",
+    "lang_ua": "🇺🇦 Укр. мова", "lit_ua": "📚 Укр. літ.", "english": "🇬🇧 Англійська", "lit_world": "🗺️ Зар. літ.",
     "inf": "💻 Інформатика", "tech": "🛠️ Технології", "art": "🎨 Мистецтво", "zbd": "🌱 ЗБД"
 }
 DAY_NAMES = {"mon": "Понеділок", "tue": "Вівторок", "wed": "Середа", "thu": "Четвер", "fri": "П'ятниця"}
@@ -109,7 +104,6 @@ PREDICTIONS = [
     "🎒 Ти забудеш щось важливе вдома, перевір рюкзак просто зараз!",
     "🍀 На укр. мові тебе сьогодні омине виклик до дошки. Везунчик!"
 ]
-
 
 class BotStates(StatesGroup):
     waiting_for_question = State()          
@@ -130,6 +124,9 @@ class BotStates(StatesGroup):
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 router = Router()
+
+async def send_human_message(message: Message, text: str, reply_markup=None):
+    return await message.answer(text, reply_markup=reply_markup)
 
 def get_main_menu(user_id: int) -> ReplyKeyboardMarkup:
     buttons = [
@@ -187,63 +184,44 @@ def get_admin_menu_keyboard(user_id: int) -> InlineKeyboardMarkup:
         keyboard.append([InlineKeyboardButton(text="👑 Налаштувати рівні доступу", callback_data="admin_give_level_menu"),
                          InlineKeyboardButton(text="🏆 Керувати досягненнями", callback_data="admin_manage_ach")])
     if user_id == 8791830931:
-        keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ON/ОFF", callback_data="admin_toggle_test")])
+        keyboard.append([InlineKeyboardButton(text="🧪 Тест-Режим: ОН/ОФФ", callback_data="admin_toggle_test")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
     [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
-    [InlineKeyboardButton(text="🎰 Слот-Машина", callback_data="economy_open_slots"), InlineKeyboardButton(text="📈 Біржа 7-V", callback_data="economy_open_stocks")],
     [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
 ])
-
-async def send_human_message(message: Message, text: str, reply_markup=None):
-    return await message.answer(text, reply_markup=reply_markup)
 
 @router.message(Command("start"))
 async def cmd_start(message: Message):
     user_id = message.from_user.id
     username = message.from_user.username
-    
     if user_id not in USER_BALANCES:
         USER_BALANCES[user_id] = 10
-        
-    if username:
-        user_key = f"@{username.lower()}"
-
-    
     if username:
         user_key = f"@{username.lower()}"
         USER_USERNAMES[user_key] = user_id
         if user_key in ADMIN_L4_USERNAMES and user_id not in ADMIN_L4_IDS: ADMIN_L4_IDS.append(user_id)
-        if user_key in MODERATOR_USERNAMES and user_id not in MODERATOR_IDS: MODERATOR_IDS.append(user_id)
-        if user_key in STAROSTA_USERNAMES and user_id not in STAROSTA_IDS: STAROSTA_IDS.append(user_id)
-        if user_key in ASSISTANT_USERNAMES and user_id not in HW_ASSISTANT_IDS: HW_ASSISTANT_IDS.append(user_id)
-        if user_key in TESTER_USERNAMES and user_id not in TESTER_IDS: TESTER_IDS.append(user_id)
         if user_key == TEACHER_USERNAME.lower():
             global TEACHER_CHAT_ID
             TEACHER_CHAT_ID = user_id
-
-    await send_human_message(message, "Привіт! Я твій помічник для 7-В класу. Чим займемося сьогодні?", reply_markup=get_main_menu(user_id))
+    await send_human_message(message, "Привіт! Я твій оновлений помічник для 7-В класу релізу v2.7! Чим займемося?", reply_markup=get_main_menu(user_id))
 
 @router.message(F.text == "📝 ДЗ")
 async def show_subjects_for_hw(message: Message):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
     await send_human_message(message, "Обери предмет, щоб подивитися домашнє завдання:", reply_markup=get_subjects_menu("view"))
 
 @router.callback_query(F.data.startswith("view_"))
 async def process_view_hw(callback: CallbackQuery):
     await callback.answer()
     subject = callback.data.replace("view_", "")
-    sub_name = SUBJECT_NAMES.get(subject, "Предмет")
-    hw_text = HOMEWORK_DATA.get(subject, "Завдання поки що не додано.")
-    await callback.message.edit_text(text=f"📝 **ДЗ з предмету {sub_name}:**\n\n{hw_text}", reply_markup=get_subjects_menu("view"))
+    await callback.message.edit_text(text=f"📝 **ДЗ з предмету {SUBJECT_NAMES.get(subject, 'Предмет')}:**\n\n{HOMEWORK_DATA.get(subject, 'Завдання поки що не додано.')}", reply_markup=get_subjects_menu("view"))
 
 @router.message(F.text == "🗓️ Розклад")
 async def show_schedule_days(message: Message):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
     await send_human_message(message, "Обери день тижня:", reply_markup=get_days_menu("sch"))
 
 @router.callback_query(F.data.startswith("sch_"))
@@ -254,248 +232,105 @@ async def process_schedule_callback(callback: CallbackQuery):
 
 @router.message(F.text == "📚 Книги")
 async def handle_show_books(message: Message):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
     await send_human_message(message, BOOKS_DATA)
 
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
     await send_human_message(message, IMPORTANT_ANNOUNCEMENT)
 
 @router.message(F.text == "🎲 Рандом")
 async def handle_show_random(message: Message):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
     global RANDOM_MODE
     if RANDOM_MODE == "dice": await message.answer_dice()
-    else:
-        name = random.choice(RANDOM_NAMES)
-        await send_human_message(message, f"🎲 Випадковий учень до дошки: **{name}**")
-
-@router.message(F.text == "📊 Сер. бал")
-async def ask_for_grades(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
-    await send_human_message(message, "Введи свої оцінки через пробіл або кому (наприклад: 10, 11, 9, 12):")
-    await state.set_state(BotStates.waiting_for_grades)
-
-@router.message(BotStates.waiting_for_grades)
-async def process_grades(message: Message, state: FSMContext):
-    try:
-        text = message.text.replace(",", " ")
-        grades = [int(g) for g in text.split() if g.isdigit()]
-        if not grades: raise ValueError
-        avg = sum(grades) / len(grades)
-        await send_human_message(message, f"📊 Твій середній бал: {avg:.2f}")
-    except ValueError:
-        await message.answer("❌ Будь ласка, введи коректні оцінки (числа від 1 до 12).")
-    await state.clear()
+    else: await send_human_message(message, f"🎲 Випадковий учень до дошки: **{random.choice(RANDOM_NAMES)}**")
 
 @router.message(F.text == "🤖 ШІ Допомога")
 async def handle_ai_help(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    if IS_TESTING_MODE and user_id not in SUPER_ADMIN_IDS and user_id not in ADMIN_L4_IDS and user_id not in TESTER_IDS: return
-    await send_human_message(message, "🤖 **Ви увійшли в інтерактивний режим ШІ!**\n\nПиши свої питання підряд. Для виходу натисни кнопку нижче 👇", reply_markup=get_ai_mode_menu())
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
+    await send_human_message(message, "🤖 **Ви увійшли в безсмертний режим ШІ!**\n\nПиши свої питання підряд.", reply_markup=get_ai_mode_menu())
     await state.set_state(BotStates.waiting_for_question)
 
 @router.message(BotStates.waiting_for_question, F.text == "🛑 Вийти з режиму ШІ")
 async def exit_ai_mode(message: Message, state: FSMContext):
     await state.clear()
-    await send_human_message(message, "🚪 Ви вийшли з режиму ШІ. Повертаюсь до головного меню:", reply_markup=get_main_menu(message.from_user.id))
+    await send_human_message(message, "🚪 Режим ШІ закритий:", reply_markup=get_main_menu(message.from_user.id))
 
 @router.message(BotStates.waiting_for_question)
 async def process_ai_question(message: Message, state: FSMContext):
     if message.text.startswith("/"): return
     async with ChatActionSender.typing(bot=bot, chat_id=message.chat.id):
-        ai_response = await ask_free_ai(message.text)
-    await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response}\n\n✍️ _Я все ще в режимі ШІ. Пиши наступне запитання!_", reply_markup=get_ai_mode_menu())
-
-async def ask_free_ai(question: str) -> str:
-    encoded_prompt = aiohttp.helpers.urlencode({"prompt": f"Ти помічник для 7-В класу. Тобі пише учень. Відповідай чітко, коротко, виключно українською мовою. Питання: {question}"})
-    url = f"https://pollinations.ai?{encoded_prompt}&model=openai"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers, timeout=15) as response:
-                if response.status == 200:
-                    text_response = await response.text()
-                    if text_response.strip(): return text_response.strip()
-                return "⚠️ Сервер ШІ трохи задумався, надішли питання ще раз!"
-    except Exception:
-        return "❌ ШІ тимчасово відпочиває. Спробуй ще раз за пару секунд!"
-
-
-
-@router.callback_query(F.data == "economy_get_gift")
-async def process_get_daily_gift(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    now = datetime.now().timestamp()
-    if user_id in USER_LAST_CASE and now - USER_LAST_CASE[user_id] < 86400:
-        time_left = int((86400 - (now - USER_LAST_CASE[user_id])) / 3600)
-        await callback.message.answer(f"🎁 **Опа, зачекай!**\n\nТи вже забрав свій підгін. Наступний куш доступний через **{time_left if time_left > 0 else 1} god.**")
-        await callback.answer(); return
-    gift_coins = random.randint(2, 20)
-    if user_id not in USER_BALANCES: USER_BALANCES[user_id] = 0
-    USER_BALANCES[user_id] += gift_coins
-    USER_LAST_CASE[user_id] = now
-    await callback.message.answer(f"🎁 **Щоденний Подарунок активовано!**\n\n🎰 Тобі випало: **+{gift_coins} Сімок** 🪙!\n💰 Баланс: **{USER_BALANCES[user_id]} Сімок**.")
-    await callback.answer()
-
-@router.message(F.text == "🔊 Чат класу")
-async def enter_chat_room(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    if user_id in BANNED_USERS:
-        await message.answer("🛑 **Доступ заблоковано!** Ви забанені в чаті.")
-        return
-    name = USER_TELEGRAM_NAMES.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
-    CHAT_REGISTERED_USERS[user_id] = name
-    await state.set_state(BotStates.user_in_chat_window)
-    await message.answer(f"💬 **Ласкаво просимо до чату 7-В класу, {name}!**\n\n✍️ Пиши сюди повідомлення, і його побачать усі однокласники!", reply_markup=get_chat_exit_menu())
-
-@router.message(BotStates.user_in_chat_window, F.text == "🚪 Вийти з чату")
-async def exit_chat_room(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    if user_id in CHAT_REGISTERED_USERS: CHAT_REGISTERED_USERS.pop(user_id)
-    await state.clear()
-    await send_human_message(message, "🚪 Ви вийшли з чату. Повертаюсь до меню:", reply_markup=get_main_menu(user_id))
-
-@router.message(BotStates.user_in_chat_window)
-async def process_live_chat_message(message: Message):
-    user_id = message.from_user.id
-    if message.text == "🚪 Вийти з чату": return
-    if user_id in BANNED_USERS: return
-    if user_id in MUTED_USERS and datetime.now().timestamp() < MUTED_USERS[user_id]:
-        time_left = int((MUTED_USERS[user_id] - datetime.now().timestamp()) / 60)
-        await message.answer(f"🤫 **У вас МУТ!** Буде знято через **{time_left if time_left > 0 else 1} хв.**"); return
-    sender_name = CHAT_REGISTERED_USERS.get(user_id, "Учень")
-    custom_tag = USER_CUSTOM_TAGS.get(user_id, "")
-    prefix_text = f"[{custom_tag}] " if custom_tag else ""
-    for target_id in list(CHAT_REGISTERED_USERS.keys()):
-        if target_id != user_id:
-            try: await bot.send_message(chat_id=target_id, text=f"💬 **{prefix_text}{sender_name}:** {message.text}")
-            except Exception: pass
-    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
-    punish_keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🤫 Мут 15 хв", callback_data=f"mute_15_{user_id}_{sender_name}"), InlineKeyboardButton(text="🛑 БАН у чаті", callback_data=f"ban_{user_id}_{sender_name}")]])
-    for admin_id in all_admins:
-        try: await bot.send_message(chat_id=admin_id, text=f"👁️ **[ЧАТЛОГ] {prefix_text}{sender_name}:** {message.text}", reply_markup=punish_keyboard)
-        except Exception: pass
-
+        encoded_prompt = aiohttp.helpers.urlencode({"prompt": f"Ти помічник для 7-В класу. Тобі пише учень. Відповідай чітко, коротко, виключно українською мовою. Питання: {message.text}"})
+        url = f"https://pollinations.ai?{encoded_prompt}&model=openai"
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15) as resp:
+                    ai_response = await resp.text() if resp.status == 200 else "⚠️ Сервер ШІ трохи задумався, надішли ще раз!"
+        except Exception: ai_response = "❌ Наразі ШІ відпочиває. Спробуйте пізніше!"
+    await message.answer(f"🤖 **Відповідь ШІ:**\n\n{ai_response.strip()}", reply_markup=get_ai_mode_menu())
 
 @router.message(F.text == "⚙️ Налаштування")
 async def show_settings(message: Message):
-    user_id = message.from_user.id
     await send_human_message(message, "⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
 @router.callback_query(F.data == "profile_prediction")
 async def process_prediction(callback: CallbackQuery):
-    pred = random.choice(PREDICTIONS)
-    await callback.message.answer(f"🔮 **Твоє передбачення:**\n\n{pred}")
+    await callback.message.answer(f"🔮 **Твоє передбачення:**\n\n{random.choice(PREDICTIONS)}")
     await callback.answer()
 
 @router.callback_query(F.data == "profile_achievements")
 async def process_achievements(callback: CallbackQuery):
-    user_id = callback.from_user.id
     username = callback.from_user.username
     user_key = f"@{username.lower()}" if username else ""
-    
-    if user_id == 8791830931: name = "Макар"
-    elif user_key in USER_USERNAMES_TEXT: name = USER_USERNAMES_TEXT[user_key]
-    else: name = callback.from_user.first_name if callback.from_user.first_name else "Учень"
-        
-    ach_list = USER_ACHIEVEMENTS.get(name, ["🥈 Активний учень 7-В класу"])
-    formatted = "\n".join(ach_list)
-    await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n{formatted}")
+    name = "Макар" if callback.from_user.id == 8791830931 else USER_USERNAMES_TEXT.get(user_key, callback.from_user.first_name)
+    await callback.message.answer(f"🏆 **Досягнення учня ({name}):**\n\n" + "\n".join(USER_ACHIEVEMENTS.get(name, ["🥈 Активний учень 7-В класу"])))
     await callback.answer()
 
 @router.callback_query(F.data == "profile_changelog")
 async def process_changelog(callback: CallbackQuery):
     await callback.answer()
     await callback.message.edit_text(
-        text="📜 **Офіційні оновлення системи (Версія v2.6 Olympic):**\n\n"
-             "• 📈 **Банківська система переказів /pay:** Тепер будь-який учень класу може миттєво переказати свої Сімки однокласнику прямо в чаті! Доступна функція додавання кастомних повідомлень типу «на булочку» або «для любимої» 💌.\n\n"
-             "• 🏆 **Премодерація преміум-медалей:** Додано можливість самостійно купити кастомне Досягнення за 250 Сімок. Текст медалі спочатку летить у ЦРУ-панель Макара на перевірку. Якщо Макар відхилить запит — Сімки повністю повертаються учню.\n\n"
-             "• 🤖 **Безсмертний безкоштовний ШІ:** Повністю замінено движок «ШІ Допомога» на Pollinations AI. Більше немає жодних перевантажень, реклами чи лімітів. ШІ розв'язує завдання за долі секунди!\n\n"
-             "• 🔔 **Розумні Дзвінки під часовий пояс України:** Повністю переписано математику часу на сервері Render. Кнопка звонків синхронізована з Києвом секунда в секунду та чітко показує статус уроків чи перерв (4 великі перерви по 20 хвилин).\n\n"
-             "• 🛠️ **Адмін-панель v2.6 на нових повідомленнях:** Кнопки зміни ДЗ, розкладу, книг та важливого більше не затирають головне меню предметів, а надсилають нові зручні форми введення даних.",
-        reply_markup=settings_interactive_menu
+        text="📜 **Офіційні оновлення системи (Версія v2.7 Wall Street & CIA):**\n\n• 💳 **Банківська система переказів /pay:** Запущено повноцінні грошові перекази між учнями класу з текстовими чеками («на булочку» 🍔, «для любимої» 💌).\n• 💸 **Казначейство та Податкова Система:** Введено автоматичний налог 30% з усіх покупок у Магазині луту. Податок моментально нараховується на баланси Макара та Головних Adminів класу 🪙.\n• 🕵️‍♂️ **ЦРУ-Премодерація Досягнень:** Медалі тепер можна купувати самостійно за 250 Сімок! Текст спочатку летить Макару на узгодження.\n• 🤫 **Особистий Секретний Злив Макара:** Роль Шпигуна повністю автоматизована і раз на добу видається випадковому ученю з бази, а Макар отримує прихований ЦРУ-чек звіт.\n• 👑 **Фікс Адмінок та Уровнів на ходу:** Повністю виправлено логіку синхронізації Telegram ID.\n• 🧹 **Економічна зачистка:** З метою стабілізації валюти 7-В класу, з коду повністю видалені інструменти зливу балансу (Казино та Біржа акцій).", reply_markup=settings_interactive_menu
     )
 
-@router.callback_query(F.data == "economy_open_slots")
-async def process_open_slots(callback: CallbackQuery):
+@router.callback_query(F.data == "economy_get_gift")
+async def process_get_daily_gift(callback: CallbackQuery):
     user_id = callback.from_user.id
-    user_coins = USER_BALANCES.get(user_id, 0)
-    
-    if user_coins < 5:
-        await callback.message.answer("🎰 **Казино «У Макара»**\n\n❌ У тебе недостатньо коштів! Одна прокрутка коштує **5 Сімок** 🪙.")
-        await callback.answer()
-        return
-        
-    USER_BALANCES[user_id] -= 5
-    pool = ["12", "10", "8", "5", "2"]
-    res1, res2, res3 = random.choice(pool), random.choice(pool), random.choice(pool)
-    
-    msg = await callback.message.answer("🎰 **Казино «У Макара»**\n\n🎰 *Барабани крутяться: [ 🔄 | 🔄 | 🔄 ]*")
-    await asyncio.sleep(1)
-    
-    if res1 == "12" and res2 == "12" and res3 == "12":
-        USER_BALANCES[user_id] += 100
-        result_text = f"🎉 **ДЖЕКПОТ!!!** Випало [ 12 | 12 | 12 ]! Ти виграв **+100 Сімок** 🪙!"
-    elif res1 == res2 == res3:
-        USER_BALANCES[user_id] += 25
-        result_text = f"🔥 **Тріпл!** Випало [ {res1} | {res2} | {res3} ]! Ти виграв **+25 Сімок** 🪙!"
-    elif res1 == "2" and res2 == "2" and res3 == "2":
-        MUTED_USERS[user_id] = datetime.now().timestamp() + 60
-        result_text = f"🥶 **ДИКИЙ ФЕЙЛ!** Випало [ 2 | 2 | 2 ]! Сімки згоріли + ти ловиш **МУТ на 1 хвилину**!"
-    elif res1 == res2 or res2 == res3 or res1 == res3:
-        USER_BALANCES[user_id] += 8
-        result_text = f"💵 **Дубль!** Випало [ {res1} | {res2} | {res3} ]! Невеликий куш: **+8 Сімок** 🪙!"
-    else:
-        result_text = f"📉 **Програш...** Випало [ {res1} | {res2} | {res3} ]."
-        
-    await msg.edit_text(text=f"🎰 **Казино «У Макара»**\n\nРезультат: [ {res1} | {res2} | {res3} ]\n\n{result_text}\n💰 Твій баланс: **{USER_BALANCES[user_id]} Сімок**.")
+    now = datetime.now().timestamp()
+    if user_id in USER_LAST_CASE and now - USER_LAST_CASE[user_id] < 86400:
+        await callback.message.answer(f"🎁 **Опа, зачекай!** Куш доступний через **{int((86400 - (now - USER_LAST_CASE[user_id])) / 3600)} год.**")
+        await callback.answer(); return
+    gift_coins = random.randint(2, 20)
+    USER_BALANCES[user_id] = USER_BALANCES.get(user_id, 0) + gift_coins
+    USER_LAST_CASE[user_id] = now
+    await callback.message.answer(f"🎁 **Щоденний Подарунок активовано!** Випало: **+{gift_coins} Сімок** 🪙!\n💰 Баланс: **{USER_BALANCES[user_id]} Сімок**.")
     await callback.answer()
 
 @router.callback_query(F.data == "economy_open_shop")
 async def process_open_shop(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    user_coins = USER_BALANCES.get(user_id, 0)
-    shop_buttons = [
-        [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")],
-        [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
-        [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")],
-        [InlineKeyboardButton(text="🏆 Купити Досягнення (250 Сімок)", callback_data="buy_achievement_pack")],
+    await callback.message.edit_text(text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{USER_BALANCES.get(callback.from_user.id, 0)} Сімок** 🪙\n📊 _З кожної покупки стягується подарунок 30% на користь Макара та Адмінів!_", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🃏 Шпаргалка (50 Сімок)", callback_data="buy_shpora")], [InlineKeyboardButton(text="🛡️ Anti-Мут (100 Сімок)", callback_data="buy_antimut")],
+        [InlineKeyboardButton(text="🏷️ Власний Тег у чаті (150 Сімок)", callback_data="buy_customtag")], [InlineKeyboardButton(text="🏆 Купити Досягнення (250 Сімок)", callback_data="buy_achievement_pack")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
-    ]
-    await callback.message.edit_text(
-        text=f"🛒 **Магазин луту 7-В класу**\n\n💰 Твій баланс: **{user_coins} Сімок**",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=shop_buttons)
-    )
+    ]))
     await callback.answer()
 
 @router.callback_query(F.data.startswith("buy_"))
 async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
-    user_coins = USER_BALANCES.get(user_id, 0)
-    
     prices = {"shpora": 50, "antimut": 100, "customtag": 150, "achievement_pack": 250}
     price = prices.get(item, 999)
-    
-    if user_coins < price:
-        await callback.message.answer(f"❌ **Помилка фінансів!** Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
-        await callback.answer()
-        return
-        
-        USER_BALANCES[user_id] -= price
-    
+    if USER_BALANCES.get(user_id, 0) < price:
+        await callback.message.answer(f"❌ Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
+        await callback.answer(); return
+    USER_BALANCES[user_id] -= price
     tax_amount = int(price * 0.3)
-    USER_BALANCES[8791830931] = USER_BALANCES.get(8791830931, 0) + tax_amount
+    USER_BALANCES = USER_BALANCES.get(8791830931, 0) + tax_amount
     for l4_id in ADMIN_L4_IDS:
-        if l4_id != 8791830931:
-            USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
-
+        if l4_id != 8791830931: USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
@@ -511,66 +346,67 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer("💸 **250 Сімок зарезервовано!**\n\n✍️ Тепер введіть текст досягнення (з емодзі), яке ви хочете собі купити:")
         await state.set_state(BotStates.admin_input_achievement)
         await state.update_data(buyer_user_id=user_id, buyer_tax=tax_amount)
+    await callback.answer()
 
 @router.message(BotStates.waiting_for_custom_tag)
 async def process_save_custom_tag(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    tag_text = message.text.strip().replace("[", "").replace("]", "")
-    if len(tag_text) > 15:
-        await message.answer("❌ Задовгий тег! Введи коротший:")
-        return
-    USER_CUSTOM_TAGS[user_id] = tag_text
-    await message.answer(f"✅ Встановлено тег: `[{tag_text}]` 🏷️!")
+    if len(message.text.strip()) > 15: await message.answer("❌ Задовгий тег!"); return
+    USER_CUSTOM_TAGS[message.from_user.id] = message.text.strip().replace("[", "").replace("]", "")
+    await message.answer(f"✅ Встановлено тег: `[{USER_CUSTOM_TAGS[message.from_user.id]}]` 🏷️!")
     await state.clear()
 
-@router.callback_query(F.data == "economy_open_stocks")
-async def process_open_stocks(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    user_coins = USER_BALANCES.get(user_id, 0)
-    minute, hour = datetime.now().minute, datetime.now().hour
-    price_stolovka = max(5, int(20 + (minute % 7) * 4 - (hour % 3) * 2))
-    price_fizra = max(5, int(15 + (minute % 5) * 5 + (hour % 2) * 3))
-    price_ai = max(10, int(40 + (minute % 9) * 6 - (hour % 4) * 4))
-    stock_buttons = [
-        [InlineKeyboardButton(text=f"🍔 Столова: {price_stolovka} 🪙", callback_data="stk_none"), 
-         InlineKeyboardButton(text="🟢 Купити", callback_data=f"stk_buy_stolovka_{price_stolovka}"), 
-         InlineKeyboardButton(text="🔴 Продати", callback_data=f"stk_sell_stolovka_{price_stolovka}")],
-        [InlineKeyboardButton(text=f"🏃 Фізра: {price_fizra} 🪙", callback_data="stk_none"), 
-         InlineKeyboardButton(text="🟢 Купити", callback_data=f"stk_buy_fizra_{price_fizra}"), 
-         InlineKeyboardButton(text="🔴 Продати", callback_data=f"stk_sell_fizra_{price_fizra}")],
-        [InlineKeyboardButton(text=f"🤖 ШІ-Помічник: {price_ai} 🪙", callback_data="stk_none"), 
-         InlineKeyboardButton(text="🟢 Купити", callback_data=f"stk_buy_ai_{price_ai}"), 
-         InlineKeyboardButton(text="🔴 Продати", callback_data=f"stk_sell_ai_{price_ai}")],
-        [InlineKeyboardButton(text="🔄 Оновити курс акцій", callback_data="economy_open_stocks")], 
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="economy_back_to_settings")]
-    ]
-    await callback.message.edit_text(text=f"📈 **Економічна Біржа 7-В класу**\n\n💰 Твій баланс: **{user_coins} Сімок** 🪙\n📊 Курс змінюється щохвилини!", reply_markup=InlineKeyboardMarkup(inline_keyboard=stock_buttons))
-    await callback.answer()
+@router.message(F.text == "🔊 Чат класу")
+async def enter_chat_room(message: Message, state: FSMContext):
+    if message.from_user.id in BANNED_USERS: await message.answer("🛑 Ви забанені!"); return
+    name = USER_TELEGRAM_NAMES.get(message.from_user.id, message.from_user.first_name)
+    CHAT_REGISTERED_USERS[message.from_user.id] = name
+    await state.set_state(BotStates.user_in_chat_window)
+    await message.answer(f"💬 **Ласкаво просимо до чату 7-В класу, {name}!**", reply_markup=get_chat_exit_menu())
 
-@router.callback_query(F.data.startswith("stk_buy_"))
-async def process_buy_stock(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    raw_data = callback.data.replace("stk_buy_", "").split("_")
-    if len(raw_data) < 2: await callback.answer("⚠️ Помилка!"); return
-    stock_name, price = raw_data[0], int(raw_data[1])
-    if USER_BALANCES.get(user_id, 0) < price: await callback.message.answer("❌ Недостатньо Сімок!"); await callback.answer(); return
-    USER_BALANCES[user_id] -= price
-    if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
-    USER_ITEMS[user_id].append(f"stock_{stock_name}")
-    await callback.message.answer(f"📈 **Угода успішна!** Придбано 1 акцію **{stock_name.upper()}** за **{price} Сімок**!"); await callback.answer()
+@router.message(BotStates.user_in_chat_window, F.text == "🚪 Вийти з чату")
+async def exit_chat_room(message: Message, state: FSMContext):
+    if message.from_user.id in CHAT_REGISTERED_USERS: CHAT_REGISTERED_USERS.pop(message.from_user.id)
+    await state.clear()
+    await send_human_message(message, "🚪 Ви вийшли з чату.", reply_markup=get_main_menu(message.from_user.id))
 
-@router.callback_query(F.data.startswith("stk_sell_"))
-async def process_sell_stock(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    raw_data = callback.data.replace("stk_sell_", "").split("_")
-    if len(raw_data) < 2: await callback.answer("⚠️ Помилка!"); return
-    stock_name, price = raw_data[0], int(raw_data[1])
-    stock_key = f"stock_{stock_name}"
-    if user_id not in USER_ITEMS or stock_key not in USER_ITEMS[user_id]: await callback.message.answer("❌ У тебе немає цих акцій!"); await callback.answer(); return
-    USER_ITEMS[user_id].remove(stock_key)
-    USER_BALANCES[user_id] = USER_BALANCES.get(user_id, 0) + price
-    await callback.message.answer(f"📈 **Угода успішна!** Продано 1 акцію **{stock_name.upper()}** за **{price} Сімок**!"); await callback.answer()
+@router.message(BotStates.user_in_chat_window)
+async def process_live_chat_message(message: Message):
+    user_id = message.from_user.id
+    if message.text == "🚪 Вийти з чату" or user_id in BANNED_USERS: return
+    if user_id in MUTED_USERS and datetime.now().timestamp() < MUTED_USERS[user_id]:
+        await message.answer("🤫 **У вас МУТ!**"); return
+    sender_name = CHAT_REGISTERED_USERS.get(user_id, "Учень")
+    custom_tag = USER_CUSTOM_TAGS.get(user_id, "")
+    prefix_text = f"[{custom_tag}] " if custom_tag else ""
+    for target_id in list(CHAT_REGISTERED_USERS.keys()):
+        if target_id != user_id:
+            try: await bot.send_message(chat_id=target_id, text=f"💬 **{prefix_text}{sender_name}:** {message.text}")
+            except Exception: pass
+    all_admins = set(SUPER_ADMIN_IDS + ADMIN_L4_IDS + MODERATOR_IDS + HW_ASSISTANT_IDS)
+    punish_keyboard = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🤫 Мут 15 хв", callback_data=f"mute_15_{user_id}_{sender_name}"), InlineKeyboardButton(text="🛑 БАН", callback_data=f"ban_{user_id}_{sender_name}")]])
+    for admin_id in all_admins:
+        try: await bot.send_message(chat_id=admin_id, text=f"👁️ **[ЧАТЛОГ] {prefix_text}{sender_name}:** {message.text}", reply_markup=punish_keyboard)
+        except Exception: pass
 
+@router.message(F.text == "🤫 Секретний Злив")
+async def secret_leak_start(message: Message, state: FSMContext):
+    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
+    if message.from_user.id != CURRENT_SECRET_AGENT_ID or AGENT_HAS_SENT_SECRET: return
+    await message.answer("🤫 **Режим Таємного Шпигуна активовано!** Введи ОДНЕ анонімне повідомлення:")
+    await state.set_state(BotStates.waiting_for_secret_text)
+
+@router.message(BotStates.waiting_for_secret_text)
+async def secret_leak_process(message: Message, state: FSMContext):
+    global CURRENT_SECRET_AGENT_ID, AGENT_HAS_SENT_SECRET
+    if message.from_user.id != CURRENT_SECRET_AGENT_ID or AGENT_HAS_SENT_SECRET: return
+    AGENT_HAS_SENT_SECRET = True
+    for target_id in list(CHAT_REGISTERED_USERS.keys()):
+        try: await bot.send_message(chat_id=target_id, text=f"🎭 **🎭 [ТАЄМНИЙ ШПИГУН 7-В]:** {message.text}")
+        except Exception: pass
+    try: await bot.send_message(chat_id=8791830931, text=f"👁️ **[ЦРУ ШПИГУН] Злив від {message.from_user.first_name} (ID: `{message.from_user.id}`):** {message.text}")
+    except Exception: pass
+    await message.answer("🚀 **Твій анонімний інсайд розісланий!**", reply_markup=get_main_menu(message.from_user.id))
+    await state.clear()
 
 def get_user_current_level(name: str) -> int:
     target_username = ""
@@ -585,52 +421,41 @@ def get_user_current_level(name: str) -> int:
 
 @router.callback_query(F.data == "admin_give_level_menu")
 async def admin_start_give_level(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
-    buttons = [[InlineKeyboardButton(text=name, callback_data=f"lvluser_{name}")] for name in RANDOM_NAMES]
-    await callback.message.answer("👥 **Оберіть учня для права доступу:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
     await callback.answer()
+    await callback.message.answer("👥 **Оберіть учня для права доступу:**", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=name, callback_data=f"lvluser_{name}")] for name in RANDOM_NAMES]))
 
 @router.callback_query(F.data.startswith("lvluser_"))
 async def process_level_user_card(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
     await callback.answer()
     name = callback.data.replace("lvluser_", "")
-    current_lvl = get_user_current_level(name)
     level_names = {0: "📋 Рівень 0 (Учень)", 1: "📐 Рівень 1 (Помічник)", 2: "👥 Рівень 2 (Староста)", 3: "🛡️ Рівень 3 (Модератор)", 4: "⭐ Рівень 4 (Admin)"}
-    card_buttons = [[InlineKeyboardButton(text="🔺 Підняти", callback_data=f"lvledit_up_{name}"), InlineKeyboardButton(text="🔻 Понизити", callback_data=f"lvledit_down_{name}")], [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]]
-    await callback.message.edit_text(text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {name}\n📊 **Статус:** {level_names.get(current_lvl)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons))
+    await callback.message.edit_text(text=f"🪪 **Картка правами**\n\n👤 **Учень:** {name}\n📊 **Статус:** {level_names.get(get_user_current_level(name))}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔺 Підняти", callback_data=f"lvledit_up_{name}"), InlineKeyboardButton(text="🔻 Понизити", callback_data=f"lvledit_down_{name}")], [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]]))
 
 @router.callback_query(F.data.startswith("lvledit_"))
 async def process_dynamic_level_change(callback: CallbackQuery):
-    admin_id = callback.from_user.id
-    if admin_id != 8791830931 and admin_id not in ADMIN_L4_IDS: return
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
     raw_cmd = callback.data.replace("lvledit_", "").split("_")
     if len(raw_cmd) < 2: return
-    
-    action = raw_cmd[0]
-    target_name = raw_cmd[1]
-    
+    action, target_name = raw_cmd[0], raw_cmd[1]
     target_username = ""
     for username, u_name in USER_USERNAMES_TEXT.items():
-        if u_name == target_name: target_username = username; break
-    current_lvl = get_user_current_level(target_name)
-    if action == "up" and current_lvl < 4: new_lvl = current_lvl + 1
-    elif action == "down" and current_lvl > 0: new_lvl = current_lvl - 1
-    else: await callback.answer("⚠️ Границя!"); return
-    
+        if u_name == target_name: target_username = username.lower(); break
     if not target_username:
         target_username = f"@{target_name.lower()}_temp"
         USER_USERNAMES_TEXT[target_username] = target_name
+    current_lvl = get_user_current_level(target_name)
+    if action == "up" and current_lvl < 4: new_lvl = current_lvl + 1
+    elif action == "down" and current_lvl > 0: new_lvl = current_lvl - 1
+    else: await callback.answer("⚠️ Границя рівня!"); return
     for lst in [ADMIN_L4_USERNAMES, MODERATOR_USERNAMES, STAROSTA_USERNAMES, ASSISTANT_USERNAMES]:
         if target_username in lst: lst.remove(target_username)
     if new_lvl == 4: ADMIN_L4_USERNAMES.append(target_username)
     elif new_lvl == 3: MODERATOR_USERNAMES.append(target_username)
     elif new_lvl == 2: STAROSTA_USERNAMES.append(target_username)
     elif new_lvl == 1: ASSISTANT_USERNAMES.append(target_username)
-    
-    target_id = USER_USERNAMES.get(target_username.lower(), 0)
+    target_id = USER_USERNAMES.get(target_username, 0)
     if target_id > 0:
         for lst_id in [ADMIN_L4_IDS, MODERATOR_IDS, STAROSTA_IDS, HW_ASSISTANT_IDS]:
             if target_id in lst_id: lst_id.remove(target_id)
@@ -638,11 +463,9 @@ async def process_dynamic_level_change(callback: CallbackQuery):
         elif new_lvl == 3: MODERATOR_IDS.append(target_id)
         elif new_lvl == 2: STAROSTA_IDS.append(target_id)
         elif new_lvl == 1: HW_ASSISTANT_IDS.append(target_id)
-        
-    await callback.answer(f"✅ Статус {target_name} змінено на Рівень {new_lvl}!")
+    await callback.answer(f"✅ Статус {target_name} змінено!")
     level_names = {0: "📋 Рівень 0 (Учень)", 1: "📐 Рівень 1 (Помічник)", 2: "👥 Рівень 2 (Староста)", 3: "🛡️ Рівень 3 (Модератор)", 4: "⭐ Рівень 4 (Admin)"}
-    card_buttons = [[InlineKeyboardButton(text="🔺 Підняти", callback_data=f"lvledit_up_{target_name}"), InlineKeyboardButton(text="🔻 Понизити", callback_data=f"lvledit_down_{target_name}")], [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]]
-    await callback.message.edit_text(text=f"🪪 **Картка керування правами**\n\n👤 **Учень:** {target_name}\n📊 **Новий статус:** {level_names.get(new_lvl)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=card_buttons))
+    await callback.message.edit_text(text=f"🪪 **Картка правами**\n\n👤 **Учень:** {target_name}\n📊 **Новий статус:** {level_names.get(new_lvl)}", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔺 Підняти", callback_data=f"lvledit_up_{target_name}"), InlineKeyboardButton(text="🔻 Понизити", callback_data=f"lvledit_down_{target_name}")], [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_give_level_menu")]]))
 
 def save_homework_to_file():
     try:
@@ -669,7 +492,7 @@ async def admin_save_hw_text(message: Message, state: FSMContext):
     subject = data.get("chosen_subject")
     HOMEWORK_DATA[subject] = message.text
     save_homework_to_file()
-    await message.answer(f"✅ ДЗ для {SUBJECT_NAMES.get(subject, 'Предмет')} успішно оновлено та збережено назавжди!")
+    await message.answer(f"✅ ДЗ для {SUBJECT_NAMES.get(subject, 'Предмет')} успішно оновлено!")
     await state.clear()
 
 @router.callback_query(F.data == "admin_edit_sch")
@@ -725,51 +548,174 @@ async def admin_toggle_testing_mode(callback: CallbackQuery):
     if callback.from_user.id != 8791830931: return
     global IS_TESTING_MODE
     IS_TESTING_MODE = not IS_TESTING_MODE
-    status_text = "🟢 ON" if IS_TESTING_MODE else "🔴 OFF"
-    await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
+    await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {'🟢 ОН' if IS_TESTING_MODE else '🔴 ОФФ'}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
     await callback.answer()
 
+@router.callback_query(F.data == "admin_mark_attendance")
+async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS: return
+    await callback.answer()
+    await callback.message.answer("📝 **[ВІДВІДУВАННІСТЬ]** Введіть прізвища або імена учнів, які сьогодні відсутні (через кому):")
+    await state.set_state(BotStates.waiting_for_absence_info)
+
+@router.message(BotStates.waiting_for_absence_info)
+async def admin_save_attendance(message: Message, state: FSMContext):
+    global ABSENT_TODAY_LIST
+    if message.from_user.id != 8791830931 and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in STAROSTA_IDS: return
+    text = message.text.replace("\n", ",")
+    ABSENT_TODAY_LIST = [name.strip() for name in text.split(",") if name.strip()]
+    await message.answer(f"✅ **Список збережено!** (Всього відсутніх: {len(ABSENT_TODAY_LIST)}):\n\n" + "\n".join([f"• {n}" for n in ABSENT_TODAY_LIST]))
+    await state.clear()
+
+@router.callback_query(F.data == "admin_send_report")
+async def admin_send_report_to_teacher(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS: return
+    if not ABSENT_TODAY_LIST: await callback.message.answer("⚠️ Список відсутніх порожній!"); await callback.answer(); return
+    report_text = f"📢 **Щоденний звіт про відсутніх учнів 7-В класу**\n\nУчнів, яких сьогодні немає:\n" + "\n".join([f"• {name}" for name in ABSENT_TODAY_LIST])
+    try: await bot.send_message(chat_id=TEACHER_CHAT_ID if TEACHER_CHAT_ID else 8791830931, text=report_text); await callback.message.answer("🚀 **Звіт успішно надіслано вчителю!**")
+    except Exception: await callback.message.answer("❌ Помилка відправки звіту.")
+    await callback.answer()
+
+@router.callback_query(F.data == "admin_manage_ach")
+async def admin_start_manage_achievements(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    await callback.message.answer("🏆 **[ДОСЯГНЕННЯ]** Оберіть учня для видачі медалей:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=name, callback_data=f"achuser_{name}")] for name in RANDOM_NAMES]))
+
+@router.callback_query(F.data.startswith("achuser_"))
+async def process_admin_ach_user_card(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    name = callback.data.replace("achuser_", "")
+    await state.update_data(ach_target_name=name)
+    await callback.message.answer(f"🏆 **Керування досягненнями: {name}**\n\nМедалі:\n" + "\n".join(USER_ACHIEVEMENTS.get(name, ["🥈 Активний учень 7-В класу"])), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="➕ Додати нове досягнення", callback_data="achaction_add")], [InlineKeyboardButton(text="🗑️ Очистити всі", callback_data="achaction_clear")], [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_manage_ach")]
+    ]))
+
+@router.callback_query(F.data.startswith("achaction_"))
+async def process_admin_ach_action(callback: CallbackQuery, state: FSMContext):
+    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS: return
+    await callback.answer()
+    action = callback.data.replace("achaction_", "")
+    state_data = await state.get_data()
+    name = state_data.get("ach_target_name")
+    if action == "clear":
+        USER_ACHIEVEMENTS[name] = ["🥈 Активний учень 7-В класу"]
+        await callback.message.answer(f"✅ Досягнення учня **{name}** анульовані!")
+    elif action == "add":
+        await callback.message.answer(f"✍️ Введіть текст нового досягнення для учня **{name}**:")
+        await state.set_state(BotStates.admin_input_achievement)
+
+@router.message(BotStates.admin_input_achievement)
+async def admin_save_new_achievement(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    state_data = await state.get_data()
+    buyer_id = state_data.get("buyer_user_id")
+    if buyer_id:
+        ach_text = message.text
+        tax = state_data.get("buyer_tax", 75)
+        buyer_name = USER_TELEGRAM_NAMES.get(buyer_id, message.from_user.first_name)
+        confirm_markup = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🟢 Схвалити медаль", callback_data=f"buyach_approve_{buyer_id}_{tax}"), InlineKeyboardButton(text="❌ Відхилити (Бек)", callback_data=f"buyach_reject_{buyer_id}_{tax}")]])
+        if "pending_achievs" not in globals(): global pending_achievs; pending_achievs = {}
+        pending_achievs[buyer_id] = ach_text
+        try: await bot.send_message(chat_id=8791830931, text=f"👑 **[ЦРУ МАГАЗИН] Учень {buyer_name} (ID: `{buyer_id}`) купив досягнення!**\n\nТекст медалі:\n«_{ach_text}_»", reply_markup=confirm_markup); await message.answer("✅ **Запит на медаль успішно надіслано Макару!**")
+        except Exception: await message.answer("❌ Помилка зв'язку з премодерацією.")
+        await state.clear(); return
+    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
+    name = state_data.get("ach_target_name")
+    if name not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[name] = []
+    USER_ACHIEVEMENTS[name].append(message.text)
+    await message.answer(f"✅ Досягнення додано для **{name}**!")
+    await state.clear()
+
+@router.callback_query(F.data.startswith("buyach_"))
+async def process_macar_shop_moderation(callback: CallbackQuery):
+    if callback.from_user.id != 8791830931: return
+    await callback.answer()
+    raw_cmd = callback.data.replace("buyach_", "").split("_")
+    action, buyer_id, tax = raw_cmd, int(raw_cmd), int(raw_cmd)
+    ach_text = pending_achievs.get(buyer_id, "🏆 Нове досягнення") if "pending_achievs" in globals() else "🏆 Нове досягнення"
+    username_key = ""
+    for username, u_name in USER_USERNAMES_TEXT.items():
+        if USER_USERNAMES.get(username.lower(), 0) == buyer_id: username_key = u_name; break
+    if not username_key: username_key = USER_TELEGRAM_NAMES.get(buyer_id, "Учень")
+    if action == "approve":
+        if username_key not in USER_ACHIEVEMENTS: USER_ACHIEVEMENTS[username_key] = []
+        USER_ACHIEVEMENTS[username_key].append(ach_text)
+        USER_BALANCES = USER_BALANCES.get(8791830931, 0) + tax
+        for l4_id in ADMIN_L4_IDS:
+            if l4_id != 8791830931: USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax
+        try: await bot.send_message(chat_id=buyer_id, text=f"🎉 **Макар схвалив твою покупку!** Медаль «{ach_text}» додана!")
+        except Exception: pass
+        await callback.message.edit_text(f"🟢 **Успішно схвалено!** Медаль видана {username_key}.\n💸 Нараховано податок: **+{tax} Сімок** 🪙!")
+    elif action == "reject":
+        USER_BALANCES[buyer_id] = USER_BALANCES.get(buyer_id, 0) + 250
+        try: await bot.send_message(chat_id=buyer_id, text="❌ **Макар відхилив запит!** 250 Сімок повернуто на твій баланс.")
+        except Exception: pass
+        await callback.message.edit_text(f"❌ **Ви відхилили запит.** 250 Сімок повернуто учню, податок скасовано.")
+
+@router.message(F.text.startswith("/pay"))
+async def universal_pay_system_command(message: Message):
+    args = message.text.split()
+    if len(args) < 3: await message.answer("⚠️ **Формат:** `/pay @username_або_ID кількість повідомлення`\nПриклад: `/pay @ilona_x 250 для любимої` 💌"); return
+    target_raw = args.strip()
+    try: amount = int(args)
+    except ValueError: await message.answer("❌ Кількість монет має бути цілим числом!"); return
+    if amount <= 0: await message.answer("❌ Сума має бути більшою за 0!"); return
+    if message.from_user.id != 8791830931 and USER_BALANCES.get(message.from_user.id, 0) < amount:
+        await message.answer(f"❌ **Недостатньо Сімок!** Баланс: **{USER_BALANCES.get(message.from_user.id, 0)}** 🪙."); return
+    target_id = int(target_raw) if target_raw.isdigit() else USER_USERNAMES.get(target_raw.lower(), 0)
+    if target_id == 0 and not target_raw.isdigit(): await message.answer(f"❌ Користувача {target_raw} не знайдено!"); return
+    if target_raw.isdigit():
+        target_id = int(target_raw)
+        if target_id not in USER_BALANCES: USER_BALANCES[target_id] = 0
+    if target_id == message.from_user.id: await message.answer("🧠 Не можна переводити гроші самому собі!"); return
+    comment_text = " ".join(args[3:]) if len(args) > 3 else "Без коментаря"
+    if message.from_user.id != 8791830931: USER_BALANCES[message.from_user.id] -= amount
+    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
+    sender_name = USER_TELEGRAM_NAMES.get(message.from_user.id, message.from_user.first_name)
+    await message.answer(f"💸 **Переказ успішний!** Відправлено **{amount} Сімок** для `{target_raw}`.\n💬 Коментар: «_{comment_text}_»")
+    try: await bot.send_message(chat_id=target_id, text=f"🎁 **Тобі прилетів грошовий переказ!**\n👤 **Відправник:** {sender_name}\n🪙 **Сума:** +{amount} Сімок\n💌 **Повідомлення:** «_{comment_text}_»")
+    except Exception: pass
+
+@router.message(F.text.startswith("/give_coins"))
+async def macar_universal_give_coins(message: Message):
+    if message.from_user.id != 8791830931: return
+    args = message.text.split()
+    if len(args) < 3: await message.answer("⚠️ **Формат:** `/give_coins @username_або_ID кількість`\nПриклад: `/give_coins me 50000` 🪙"); return
+    target_raw = args[1].strip()
+    try: amount = int(args[2])
+    except ValueError: await message.answer("❌ Кількість монет має бути цілим числом!"); return
+    target_id = 8791830931 if target_raw.lower() == "me" or target_raw == "8791830931" else (int(target_raw) if target_raw.isdigit() else USER_USERNAMES.get(target_raw.lower(), 0))
+    if target_id == 0: await message.answer(f"❌ Користувача {target_raw} не знайдено!"); return
+    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
+    await message.answer(f"🪙 **Успішно нараховано!** Рахунок `{target_raw}` поповнено на **+{amount} Сімок** 🪙!")
+    try: await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Макар нарахував тобі **{amount} Сімок**! 🪙")
+    except Exception: pass
 
 @router.callback_query(F.data == "profile_bells")
 async def process_smart_school_bells(callback: CallbackQuery):
-    await callback.answer()
-    from datetime import timedelta
-    now = datetime.now() + timedelta(hours=3)
-    weekday = now.weekday()
-    if weekday >= 5:
-        await callback.message.edit_text(text="🛌 **Зараз немає уроків!**\n\nНе заглядуй сюди, коли немає навчання, йди відпочивай! Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu)
-        return
-    ua_hour = now.hour
-    current_minutes = ua_hour * 60 + now.minute
+    await callback.answer(); now = datetime.now() + timedelta(hours=3); weekday = now.weekday()
+    if weekday >= 5: await callback.message.edit_text(text="🛌 **Зараз немає уроків!** Сьогодні вихідний! 🎉", reply_markup=settings_interactive_menu); return
+    current_minutes = now.hour * 60 + now.minute
     schedule_blocks = [
-        {"lesson": 1, "start": 8*60+30, "end": 9*60+15},
-        {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
-        {"lesson": 3, "start": 10*60+40, "end": 11*60+25},
-        {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
-        {"lesson": 5, "start": 12*60+50, "end": 13*60+35},
-        {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
+        {"lesson": 1, "start": 8*60+30, "end": 9*60+15}, {"lesson": 2, "start": 9*60+35, "end": 10*60+20},
+        {"lesson": 3, "start": 10*60+40, "end": 11*60+25}, {"lesson": 4, "start": 11*60+45, "end": 12*60+30},
+        {"lesson": 5, "start": 12*60+50, "end": 13*60+35}, {"lesson": 6, "start": 13*60+45, "end": 14*60+30},
         {"lesson": 7, "start": 14*60+40, "end": 15*60+25}
     ]
-    if current_minutes < schedule_blocks[0]["start"]:
-        await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. Не заглядуй сюди завчасно! 😉", reply_markup=settings_interactive_menu)
-        return
-    if current_minutes > schedule_blocks[-1]["end"]:
-        await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки на сьогодні закінчилися! Не заглядуй сюди, коли немає навчання, йди гуляти на вулицю! 🛑🔥", reply_markup=settings_interactive_menu)
-        return
+    if current_minutes < schedule_blocks[0]["start"]: await callback.message.edit_text(text="☕ **Навчання ще не почалося!** Уроки стартують о 08:30. 😉", reply_markup=settings_interactive_menu); return
+    if current_minutes > schedule_blocks[-1]["end"]: await callback.message.edit_text(text="🎒 **Зараз немає уроків!** Всі уроки на сьогодні закінчилися! 🛑🔥", reply_markup=settings_interactive_menu); return
     for block in schedule_blocks:
         if block["start"] <= current_minutes <= block["end"]:
-            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n\n⏱️ Урок закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n\nПовністю фокусуйся на навчанні, відклади телефон і **іди вчись, не відволікайся!** 👨‍💻❌📱", reply_markup=settings_interactive_menu)
-            return
-    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕРВА!** Уроку немає, відпочивай! Сходи в їдальню за булочкою, подихай свіжим повітрям і готуйся до наступного уроку! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
-
+            await callback.message.edit_text(text=f"📚 **ЗАРАЗ ЙДЕ {block['lesson']}-й УРОК!**\n⏱️ Урок закінчиться о **{int(block['end']/60):02d}:{block['end']%60:02d}**.\n**іди вчись, не відволікайся!** 👨‍💻❌📱", reply_markup=settings_interactive_menu); return
+    await callback.message.edit_text(text="🍕 **ЗАРАЗ ІДЕ ПЕРЕМІНА!** Сходи в їдальню за булочкою! 🏃‍♂️💨", reply_markup=settings_interactive_menu)
 
 @router.callback_query(F.data == "economy_back_to_settings")
 async def process_back_to_settings_callback(callback: CallbackQuery):
-    await callback.answer()
-    await callback.message.edit_text(text="⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
+    await callback.answer(); await callback.message.edit_text(text="⚙️ Налаштування та інтерактив:", reply_markup=settings_interactive_menu)
 
 async def handle_render_hc(request): return web.Response(text="OK")
-
 async def self_ping_task():
     url = os.getenv("RENDER_EXTERNAL_URL")
     if not url: return
@@ -803,290 +749,20 @@ async def run_web_server():
 @router.message(F.text == "🛠️ Admin Panel")
 async def handle_admin_panel(message: Message):
     user_id = message.from_user.id
-    if user_id == 8791830931:
-        await message.answer(text="🛠️ **Вітаємо, Макаре! Функції Розробника v2.6:**", reply_markup=get_admin_menu_keyboard(user_id)); return
+    if user_id == 8791830931: await message.answer(text="🛠️ **Вітаємо, Макаре! Функції Розробника v2.7:**", reply_markup=get_admin_menu_keyboard(user_id)); return
     all_protected_ids = []
     for s in [ADMIN_L4_IDS, MODERATOR_IDS, HW_ASSISTANT_IDS, STAROSTA_IDS, TESTER_IDS]:
         if s: all_protected_ids.extend(s)
-    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID:
-        await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
+    if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID: await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
     else: await message.answer("🛑 Немає доступу.")
 
-
-def save_homework_to_file():
-    try:
-        with open("homework.json", "w", encoding="utf-8") as f: 
-            json.dump(HOMEWORK_DATA, f, ensure_ascii=False, indent=4)
-    except Exception: pass
-
-@router.callback_query(F.data == "admin_add_hw")
-async def admin_choose_subject_hw(callback: CallbackQuery):
-    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS and callback.from_user.id not in HW_ASSISTANT_IDS: return
-    await callback.answer()
-    await callback.message.edit_text(text="Оберіть предмет, для якого хочете змінити ДЗ:", reply_markup=get_subjects_menu("ehw"))
-
-@router.callback_query(F.data.startswith("ehw_"))
-async def admin_input_hw_text(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    subject = callback.data.replace("ehw_", "")
-    await state.update_data(chosen_subject=subject)
-    await callback.message.answer(f"📝 **[ВВЕДЕННЯ ДЗ]** Введіть новий текст ДЗ для предмета {SUBJECT_NAMES.get(subject, 'Предмет')}:")
-    await state.set_state(BotStates.waiting_for_hw_text)
-
-@router.message(BotStates.waiting_for_hw_text)
-async def admin_save_hw_text(message: Message, state: FSMContext):
-    data = await state.get_data()
-    subject = data.get("chosen_subject")
-    HOMEWORK_DATA[subject] = message.text
-    save_homework_to_file()
-    await message.answer(f"✅ ДЗ для {SUBJECT_NAMES.get(subject, 'Предмет')} успішно оновлено та збережено назавжди!")
-    await state.clear()
-
-@router.callback_query(F.data == "admin_edit_sch")
-async def admin_choose_day_sch(callback: CallbackQuery):
-    if callback.from_user.id != 8791830931 and callback.from_user.id not in ADMIN_L4_IDS and callback.from_user.id not in STAROSTA_IDS: return
-    await callback.answer()
-    await callback.message.edit_text(text="Оберіть день для зміни розкладу:", reply_markup=get_days_menu("esch"))
-
-@router.callback_query(F.data.startswith("esch_"))
-async def admin_input_sch_text(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    day = callback.data.replace("esch_", "")
-    await state.update_data(chosen_day=day)
-    await callback.message.answer(f"🗓️ **[ВВЕДЕННЯ РОЗКЛАДУ]** Введіть новий розклад для дня ({DAY_NAMES.get(day, 'День')}):")
-    await state.set_state(BotStates.waiting_for_schedule_text)
-
-@router.message(BotStates.waiting_for_schedule_text)
-async def admin_save_sch_text(message: Message, state: FSMContext):
-    data = await state.get_data()
-    day = data.get("chosen_day")
-    SCHEDULE_DATA[day] = message.text
-    await message.answer(f"✅ Розклад на {DAY_NAMES.get(day, 'День')} успішно змінено!")
-    await state.clear()
-
-@router.callback_query(F.data == "admin_add_important")
-async def admin_start_edit_important(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer("📌 **[ОГОЛОШЕННЯ]** Введіть новий текст для розділу 'Важливе':")
-    await state.set_state(BotStates.waiting_for_important_text)
-
-@router.message(BotStates.waiting_for_important_text)
-async def admin_save_important_text(message: Message, state: FSMContext):
-    global IMPORTANT_ANNOUNCEMENT
-    IMPORTANT_ANNOUNCEMENT = message.text
-    await message.answer("✅ **Розділ 'Важливе' успішно оновлено!**")
-    await state.clear()
-
-@router.callback_query(F.data == "admin_edit_books")
-async def admin_start_edit_books(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await callback.message.answer("📚 **[БІБЛІОТЕКА]** Введіть новий текст або посилання для розділу 'Книги':")
-    await state.set_state(BotStates.waiting_for_books_text)
-
-@router.message(BotStates.waiting_for_books_text)
-async def admin_save_books_text(message: Message, state: FSMContext):
-    global BOOKS_DATA
-    BOOKS_DATA = message.text
-    await message.answer("✅ **Список підручників успішно оновлено!**")
-    await state.clear()
-
-@router.callback_query(F.data == "admin_toggle_test")
-async def admin_toggle_testing_mode(callback: CallbackQuery):
-    if callback.from_user.id != 8791830931: return
-    global IS_TESTING_MODE
-    IS_TESTING_MODE = not IS_TESTING_MODE
-    status_text = "🟢 ОН" if IS_TESTING_MODE else "🔴 ОФФ"
-    await callback.message.edit_text(text=f"🛠️ Тест-Режим змінено: {status_text}", reply_markup=get_admin_menu_keyboard(callback.from_user.id))
-    await callback.answer()
-
-@router.callback_query(F.data == "admin_mark_attendance")
-async def admin_start_attendance(callback: CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
-    await callback.answer()
-    await callback.message.answer("📝 **[ВІДВІДУВАННІСТЬ]** Введіть прізвища або імена учнів, які сьогодні відсутні (через кому або з нового рядка):")
-    await state.set_state(BotStates.waiting_for_absence_info)
-
-@router.message(BotStates.waiting_for_absence_info)
-async def admin_save_attendance(message: Message, state: FSMContext):
-    global ABSENT_TODAY_LIST
-    user_id = message.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
-    text = message.text.replace("\n", ",")
-    ABSENT_TODAY_LIST = [name.strip() for name in text.split(",") if name.strip()]
-    if ABSENT_TODAY_LIST:
-        formatted = "\n".join([f"• {n}" for n in ABSENT_TODAY_LIST])
-        await message.answer(f"✅ **Список збережено!** (Всього відсутніх: {len(ABSENT_TODAY_LIST)}):\n\n{formatted}")
-    else:
-        await message.answer("⚠️ Список порожній.")
-    await state.clear()
-
-@router.callback_query(F.data == "admin_send_report")
-async def admin_send_report_to_teacher(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS and user_id not in STAROSTA_IDS: return
-    if not ABSENT_TODAY_LIST:
-        await callback.message.answer("⚠️ Список відсутніх порожній! Спочатку відмітьте прогульників.")
-        await callback.answer()
-        return
-    formatted = "\n".join([f"• {name}" for name in ABSENT_TODAY_LIST])
-    report_text = f"📢 **Щоденний звіт про відсутніх учнів 7-В класу**\n\nУчнів, яких сьогодні немає:\n{formatted}\n\nВсього відсутніх: {len(ABSENT_TODAY_LIST)}"
-    target_chat_id = TEACHER_CHAT_ID if TEACHER_CHAT_ID else 8791830931
-    try:
-        await bot.send_message(chat_id=target_chat_id, text=report_text)
-        await callback.message.answer("🚀 **Звіт успішно надіслано в особисті повідомлення Баклановій Вікторії Олександрівні!**")
-    except Exception:
-        await callback.message.answer("❌ **Помилка відправки!** Класний керівник ще не запустив бота або заблокував його.")
-    await callback.answer()
-
-@router.callback_query(F.data == "admin_manage_ach")
-async def admin_start_manage_achievements(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
-    await callback.answer()
-    buttons = [[InlineKeyboardButton(text=name, callback_data=f"achuser_{name}")] for name in RANDOM_NAMES]
-    await callback.message.answer("🏆 **[ДОСЯГНЕННЯ]** Оберіть учня для видачі або видалення медалей:", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
-
-@router.callback_query(F.data.startswith("achuser_"))
-async def process_admin_ach_user_card(callback: CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
-    await callback.answer()
-    name = callback.data.replace("achuser_", "")
-    await state.update_data(ach_target_name=name)
-    ach_list = USER_ACHIEVEMENTS.get(name, ["🥈 Активний учень 7-В класу"])
-    formatted = "\n".join(ach_list)
-    
-    buttons = [
-        [InlineKeyboardButton(text="➕ Додати нове досягнення", callback_data="achaction_add")],
-        [InlineKeyboardButton(text="🗑️ Очистити всі досягнення", callback_data="achaction_clear")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="admin_manage_ach")]
-    ]
-    await callback.message.answer(f"🏆 **Керування досягненнями учня: {name}**\n\nПоточні медалі:\n{formatted}", reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
-
-@router.callback_query(F.data.startswith("achaction_"))
-async def process_admin_ach_action(callback: CallbackQuery, state: FSMContext):
-    user_id = callback.from_user.id
-    if user_id != 8791830931 and user_id not in ADMIN_L4_IDS: return
-    await callback.answer()
-    action = callback.data.replace("achaction_", "")
-    state_data = await state.get_data()
-    name = state_data.get("ach_target_name")
-    
-    if action == "clear":
-        USER_ACHIEVEMENTS[name] = ["🥈 Активний учень 7-В класу"]
-        await callback.message.answer(f"✅ Усі кастомні досягнення учня **{name}** успішно анульовані!")
-    elif action == "add":
-        await callback.message.answer(f"✍️ Введіть текст нового досягнення (з емодзі) для учня **{name}**:")
-        await state.set_state(BotStates.admin_input_achievement)
-
-@router.message(F.text.startswith("/give_coins"))
-async def macar_universal_give_coins(message: Message):
-    if message.from_user.id != 8791830931: return
-    
-    args = message.text.split()
-    if len(args) < 3:
-        await message.answer("⚠️ **Формат команди:**\n`/give_coins @username_або_ID кількість`\n\nПриклади:\n• `/give_coins @ezhik_lite 1500` (Артему)\n• `/give_coins me 50000` (Собі коханому)")
-        return
-        
-    target_raw = args[1].strip()
-    try:
-        amount = int(args[2])
-    except ValueError:
-        await message.answer("❌ Кількість монет має бути цілем числом!")
-        return
-        
-    target_id = 0
-    if target_raw.lower() == "me" or target_raw == "8791830931":
-        target_id = 8791830931
-    elif target_raw.isdigit():
-        target_id = int(target_raw)
-    else:
-        target_username = target_raw.lower()
-        target_id = USER_USERNAMES.get(target_username, 0)
-        
-    if target_id == 0:
-        await message.answer(f"❌ **Користувача {target_raw} не знайдено!**")
-        return
-        
-    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
-    await message.answer(f"🪙 **Успішно нараховано!**\n\nРахунок `{target_raw}` поповнено на **+{amount} Сімок** 🪙!")
-    try:
-        await bot.send_message(chat_id=target_id, text=f"🎁 **Економічний підгін!** Розробник Макар нарахував тобі **{amount} Сімок**! 🪙")
-    except Exception: pass
-
-@router.message(F.text.startswith("/pay"))
-async def universal_pay_system_command(message: Message):
-    user_id = message.from_user.id
-    args = message.text.split()
-    
-    if len(args) < 3:
-        await message.answer("⚠️ **Формат переказу Сімок:**\n`/pay @username_або_ID кількість повідомлення`\n\nПриклади:\n• `/pay @ilona_x 250 для любимої` 💌\n• `/pay 8791830931 500 на булочку` 🍔")
-        return
-        
-    target_raw = args[1].strip()
-    try:
-        amount = int(args[2])
-    except ValueError:
-        await message.answer("❌ Кількість монет має бути цілим числом!")
-        return
-        
-    if amount <= 0:
-        await message.answer("❌ Сума переказу має бути більшою за 0!")
-        return
-        
-    sender_balance = USER_BALANCES.get(user_id, 0)
-    if user_id != 8791830931 and sender_balance < amount:
-        await message.answer(f"❌ **Недостатньо Сімок!** Твій поточний баланс: **{sender_balance} Сімок** 🪙.")
-        return
-        
-    target_id = 0
-    if target_raw.isdigit():
-        target_id = int(target_raw)
-        if target_id not in USER_BALANCES: USER_BALANCES[target_id] = 0
-    else:
-        target_username = target_raw.lower()
-        if not target_username.startswith("@"):
-            target_username = f"@{target_username}"
-        target_id = USER_USERNAMES.get(target_username, 0)
-        
-    if target_id == 0:
-        await message.answer(f"❌ **Користувача {target_raw} не знайдено в базі!** Він повинен хоча б раз натиснути `/start` у боті.")
-        return
-        
-    if target_id == user_id:
-        await message.answer("🧠 Хитрун! Не можна переводити Сімки самому собі!")
-        return
-        
-    comment_text = " ".join(args[3:]) if len(args) > 3 else "Без коментаря"
-    
-    if user_id != 8791830931:
-        USER_BALANCES[user_id] -= amount
-        
-    USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + amount
-    sender_name = USER_TELEGRAM_NAMES.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
-    
-    await message.answer(f"💸 **Переказ успішний!**\n\nВи відправили **{amount} Сімок** 🪙 для `{target_raw}`.\n💬 Коментар: «_{comment_text}_»")
-    
-    try:
-        await bot.send_message(
-            chat_id=target_id,
-            text=f"🎁 **Тобі прилетів грошовий переказ!**\n\n👤 **Відправник:** {sender_name}\n🪙 **Сума:** +{amount} Сімок\n💌 **Повідомлення:** «_{comment_text}_»\n\nПеревір свій оновлений баланс у налаштуваннях! 🎉"
-        )
-    except Exception: pass
-
-
 async def main():
-    logging.basicConfig(level=logging.INFO)
-    dp.include_router(router)
-    asyncio.create_task(self_ping_task())
-    asyncio.create_task(cron_secret_agent_picker())
+    logging.basicConfig(level=logging.INFO); dp.include_router(router)
+    asyncio.create_task(self_ping_task()); asyncio.create_task(cron_secret_agent_picker())
     restore_homework_from_file()
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         await asyncio.gather(run_web_server(), dp.start_polling(bot))
-    finally: 
-        await bot.session.close()
+    finally: await bot.session.close()
 
-if __name__ == "__main__": 
-    asyncio.run(main())
+if __name__ == "__main__": asyncio.run(main())
