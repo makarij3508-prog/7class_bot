@@ -338,7 +338,8 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         
     USER_BALANCES[user_id] -= price
     tax_amount = int(price * 0.3)
-    USER_BALANCES = USER_BALANCES.get(8791830931, 0) + tax_amount
+       # 🚨 ЖЕСТКИЙ ОЛІМПІАДНИЙ ФІКС: Нараховуємо податок чітко на твій ID всередині словника!
+    USER_BALANCES[8791830931] = USER_BALANCES.get(8791830931, 0) + tax_amount
     for l4_id in ADMIN_L4_IDS:
         if l4_id != 8791830931: 
             USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
