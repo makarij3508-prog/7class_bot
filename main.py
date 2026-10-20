@@ -326,7 +326,7 @@ async def process_open_shop(callback: CallbackQuery):
 async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
-    prices = {"shpora": 50, "antimut": 100, "customtag": 150, "achievement_pack": 250}
+       prices = {"shpora": 50, "antimut": 100, "customtag": 150, "detective": 200, "achievement_pack": 250}
     price = prices.get(item, 999)
     if USER_BALANCES.get(user_id, 0) < price:
         await callback.message.answer(f"❌ Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
@@ -336,6 +336,7 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     USER_BALANCES = USER_BALANCES.get(8791830931, 0) + tax_amount
     for l4_id in ADMIN_L4_IDS:
         if l4_id != 8791830931: USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
+        
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
@@ -347,6 +348,26 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     elif item == "customtag":
         await callback.message.answer(f"🏷️ **Купівля успішна!** Сплачено податок {tax_amount} 🪙.\nВведіть текст вашого кастомного тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
+    elif item == "detective":
+        # 🕵️‍♂️ РОЗРАХУНОК ЦРУ-ПІДКАЗКИ ДЛЯ РОЗКРИТТЯ ТАЄМНОГО ШПИГУНА
+        agent_name = "Макар"
+        for username, u_name in USER_USERNAMES_TEXT.items():
+            if USER_USERNAMES.get(username.lower(), 0) == CURRENT_SECRET_AGENT_ID:
+                agent_name = u_name; break
+        
+        # Генеруємо базу розумних підказок
+        first_letter = agent_name if agent_name else "М"
+        half_index = len(RANDOM_NAMES) // 2
+        is_in_first_half = agent_name in RANDOM_NAMES[:half_index] if agent_name in RANDOM_NAMES else True
+        half_text = "у першій половині" if is_in_first_half else "у другій половині"
+        
+        clues = [
+            f"🔍 **Звіт Детектива:** Реальне ім'я сьогоднішнього Шпигуна починається на букву **'{first_letter}'**!",
+            f"🔍 **Звіт Детектива:** Довжина імені сьогоднішнього Шпигуна становить **{len(agent_name)} символів(и)**!",
+            f"🔍 **Звіт Детектива:** Шпигун ховається {half_text} загального списку класу `RANDOM_NAMES`!"
+        ]
+        selected_clue = random.choice(clues)
+        await callback.message.answer(f"🕵️‍♂️ **Детектива успішно найнято! Сплачено податок {tax_amount} 🪙.**\n\n{selected_clue}\n\n🤫 _Нікому не розповідай цей інсайд, вирахуй Шпигуна дня самостійно!_")
     elif item == "achievement_pack":
         await callback.message.answer("💸 **250 Сімок зарезервовано!**\n\n✍️ Тепер введіть текст досягнення (з емодзі), яке ви хочете собі купити:")
         await state.set_state(BotStates.admin_input_achievement)
@@ -760,6 +781,31 @@ async def handle_admin_panel(message: Message):
         if s: all_protected_ids.extend(s)
     if user_id in all_protected_ids or user_id == TEACHER_CHAT_ID: await message.answer(text="🛠️ **Панель Адміністратора:**", reply_markup=get_admin_menu_keyboard(user_id))
     else: await message.answer("🛑 Немає доступу.")
+
+@router.callback_query(F.data == "economy_top_sheikhs")
+async def process_top_sheikhs(callback: CallbackQuery):
+    await callback.answer()
+    if not USER_BALANCES:
+        await callback.message.answer("📊 **База даних банку порожня!** Баланси учнів ще не ініціалізовані.")
+        return
+    sorted_balances = sorted(USER_BALANCES.items(), key=lambda x: x, reverse=True)
+    top_text = "👑 **ТОП-10 НАЙБАГАТШИХ ШЕЙХІВ 7-В КЛАСУ** 🪙\n\n"
+    medals = {1: "🥇", 2: "🥈", 3: "🥉", 4: "📋", 5: "📋", 6: "📋", 7: "📋", 8: "📋", 9: "📋", 10: "📋"}
+    count = 1
+    for u_id, balance in sorted_balances:
+        if u_id == 8791830931: continue
+        display_name = CHAT_REGISTERED_USERS.get(u_id, "")
+        if not display_name:
+            for username, name in USER_USERNAMES_TEXT.items():
+                if USER_USERNAMES.get(username.lower(), 0) == u_id:
+                    display_name = name; break
+        if not display_name: display_name = f"Учень (ID: {str(u_id)[:4]}...)"
+        top_text += f"{medals.get(count, '📋')} **{count} Місце:** {display_name} — **{balance} Сімок** 🪙\n"
+        count += 1
+        if count > 10: break
+    top_text += "\n📊 _Заробляй Сімки кожного дня, роби перекази та купуй преміум лут, щоб очолити фінансовий рейтинг класу!_"
+    await callback.message.edit_text(text=top_text, reply_markup=settings_interactive_menu)
+
 
 async def main():
     logging.basicConfig(level=logging.INFO); dp.include_router(router)
