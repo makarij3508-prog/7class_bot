@@ -326,17 +326,23 @@ async def process_open_shop(callback: CallbackQuery):
 async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
-       prices = {"shpora": 50, "antimut": 100, "customtag": 150, "detective": 200, "achievement_pack": 250}
+    
+    # 🚨 ЖЕСТКИЙ ОЛІМПІАДНИЙ ФІКС ВІДСТУПІВ: Рівно 4 пробели від краю для кожної строчки!
+    prices = {"shpora": 50, "antimut": 100, "customtag": 150, "detective": 200, "achievement_pack": 250}
     price = prices.get(item, 999)
+    
     if USER_BALANCES.get(user_id, 0) < price:
         await callback.message.answer(f"❌ Тобі не вистачає Сімок! Потрібно: {price} 🪙.")
-        await callback.answer(); return
+        await callback.answer()
+        return
+        
     USER_BALANCES[user_id] -= price
     tax_amount = int(price * 0.3)
     USER_BALANCES = USER_BALANCES.get(8791830931, 0) + tax_amount
     for l4_id in ADMIN_L4_IDS:
-        if l4_id != 8791830931: USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
-        
+        if l4_id != 8791830931: 
+            USER_BALANCES[l4_id] = USER_BALANCES.get(l4_id, 0) + tax_amount
+
     if item == "shpora":
         if user_id not in USER_ITEMS: USER_ITEMS[user_id] = []
         USER_ITEMS[user_id].append("shpora")
