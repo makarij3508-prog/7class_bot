@@ -80,6 +80,34 @@ USER_USERNAMES_TEXT = {
     "@victoria197198": "Бакланова Вікторія Олександрівна"
 }
 
+BIRTHDAYS_DB = {
+    "18.11": ["Михайло"],
+    "17.06": ["Назарій"],
+    "31.05": ["Марія"],
+    "04.06": ["Максим", "Емілія"],
+    "16.05": ["Дмитро"],
+    "20.01": ["Данило"],
+    "16.09": ["Ангеліна"],
+    "27.10": ["Маргарита"],
+    "19.04": ["Єва"],
+    "15.02": ["Владислав"],
+    "24.10": ["Ковальчук Богдан"],
+    "26.01": ["Ілля"],
+    "23.09": ["Колодинський Богдан"],
+    "07.09": ["Ілона"],
+    "12.09": ["Олександр"],
+    "06.12": ["Макар"],
+    "18.10": ["Матвій"],
+    "04.01": ["Артем"],
+    "09.10": ["Софія"],
+    "27.06": ["Вероніка"],
+    "03.02": ["Мирослава"],
+    "03.04": ["Роман"],
+    "02.01": ["Андрій"],
+    "27.12": ["Едуард"]
+}
+
+
 SCHEDULE_DATA = {
     "mon": "🗓️ **Понеділок:**\n1. ЗБД / Зар. літ.\n2. Фізика\n3. Фізкультура\n4. Укр. література\n5. Алгебра\n6. Англійська\n7. Географія",
     "tue": "🗓️ **Вівторок:**\n1. Історія України\n2. Біологія\n3. Геометрія\n4. Укр. мова\n5. ЗБД\n6. Інформатика\n7. Технології",
@@ -933,10 +961,56 @@ async def process_accept_gladiator_duel(callback: CallbackQuery):
             await bot.send_message(chat_id=t_id, text=result_text)
         except Exception: pass
 
+async def cron_birthday_congratulations():
+    from zoneinfo import ZoneInfo
+    last_congratulated_date = ""
+    
+    while True:
+        now_ua = datetime.now(ZoneInfo("Europe/Kiev"))
+        today_str = now_ua.strftime("%d.%m")
+        
+        if now_ua.hour == 8 and now_ua.minute == 30 and last_congratulated_date != today_str:
+            last_congratulated_date = today_str
+            
+            if today_str in BIRTHDAYS_DB:
+                birthday_people = BIRTHDAYS_DB[today_str]
+                
+                for person_name in birthday_people:
+                    target_id = 0
+                    for username, u_name in USER_USERNAMES_TEXT.items():
+                        if u_name == person_name or person_name in u_name:
+                            target_id = USER_USERNAMES.get(username.lower(), 0)
+                            break
+                    if person_name == "Макар":
+                        target_id = 8791830931
+                        
+                    if target_id > 0:
+                        USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + 200
+                        try:
+                            await bot.send_message(
+                                chat_id=target_id,
+                                text=f"🎂🎉 **З ДНЕМ НАРОДЖЕННЯ, {person_name.upper()}!** 🎉🎂\n\n"
+                                     f"Весь клас та адміністрація бота вітають тебе зі святом! Бажаємо легких контрольних, крутих оцінок, побільше вільного часу та топового настрою!\n\n"
+                                     f"🎁 **Подарунок від бота:** +200 Сімок 🪙 вже зараховано на твій баланс!"
+                            )
+                        except Exception:
+                            pass
+                            
+                names_joined = ", ".join(birthday_people)
+                chat_msg = f"🥳🎂 **Сьогодні святкує День народження: {names_joined}!**\n\nНе забудьте привітати в чаті! Імениннику вже нараховано святковий бонус від бота! 🎉"
+                for chat_uid in list(CHAT_REGISTERED_USERS.keys()):
+                    try:
+                        await bot.send_message(chat_id=chat_uid, text=chat_msg)
+                    except Exception:
+                        pass
+                        
+        await asyncio.sleep(25)
+
 
 async def main():
     logging.basicConfig(level=logging.INFO); dp.include_router(router)
     asyncio.create_task(self_ping_task()); asyncio.create_task(cron_secret_agent_picker())
+        asyncio.create_task(cron_birthday_congratulations())
     restore_homework_from_file()
     try:
         await bot.delete_webhook(drop_pending_updates=True)
