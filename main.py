@@ -36,7 +36,8 @@ TEACHER_CHAT_ID = 0
 
 USER_TELEGRAM_NAMES = {8791830931: "Макар"}
 
-# 🗄️ ОЛІМПІАДНА БАЗА ДАНИХ ID УЧНІВ (ЗВ'ЯЗОК ЮЗЕРНЕЙМ -> TELEGRAM ID)
+USER_USERNAMES = {}
+
 USER_USERNAMES_TEXT = {
     "@ilona_x": "Ілона",
     "@selarkin": "Роман",
@@ -51,7 +52,7 @@ USER_USERNAMES_TEXT = {
     "@Vladore1488": "Колодинський Богдан",
     "@Sharik_xd": "Ковальчук Богдан",
     "@victoria197198": "Бакланова Вікторія Олександрівна",
-    "Mishaela1": "Михайло",
+    "@Mishaela1": "Михайло",
 }
 
 CHAT_REGISTERED_USERS = {}  
