@@ -271,10 +271,124 @@ async def process_schedule_callback(callback: CallbackQuery):
     day = callback.data.replace("sch_", "")
     await callback.message.edit_text(text=SCHEDULE_DATA.get(day, "⚠️ Нічого немає."), reply_markup=get_days_menu("sch"))
 
+BOOKS_CATALOG = {
+    "algebra": (
+        "📐 **Алгебра 7 клас (О. С. Істер, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "geometry": (
+        "📐 **Геометрія 7 клас (О. С. Істер, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "physics": (
+        "🧲 **Фізика 7 клас (С. О. Довгий та ін., 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "chemistry": (
+        "🧪 **Хімія 7 клас (О. Г. Ярошенко, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "biology": (
+        "🧬 **Біологія 7 клас (О. В. Тагліна та ін., 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "geography": (
+        "🌍 **Географія 7 клас (В. М. Бойко та ін., 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "hist_ua": (
+        "📜 **Історія України 7 клас (О. Є. Панарін, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "hist_world": (
+        "🏰 **Всесвітня історія 7 клас (О. І. Пометун та ін., 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "lang_ua": (
+        "🇺🇦 **Українська мова 7 клас (А. В. Онатій, Т. П. Ткачук, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "english": (
+        "🇬🇧 **Англійська мова 7 клас (H. Q. Mitchell — Full Blast Plus 7, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF + Аудіо (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "inf": (
+        "💻 **Інформатика 7 клас (Н. В. Морзе, О. В. Барна, 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "tech": (
+        "🛠️ **Технології 7 клас (І. Ю. Ходзицька та ін., 2024 НУШ):**\n\n"
+        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
+        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+    ),
+    "lit_ua": (
+        "📚 **Українська література 7 клас (О. В. Калинич, 2024 НУШ):**\n"
+        "• 📖 [Підручник онлайн (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n\n"
+        "🎭 **Художні твори та вірші (Текст + Аудіокниги):**\n"
+        "1. **Пісні (суспільно-побутові, козацькі, чумацькі):** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "2. **Іван Франко — «Захар Беркут»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "3. **Тарас Шевченко — «Тополя», «Заповіт», «Мені тринадцятий минало...»:** [📖 Тополя](https://ukrlib.com.ua) | [📖 Заповіт](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "4. **Андрій Чайковський — «За сестрою»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "5. **Михайло Стельмах — «Гуси-лебеді летять»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "6. **Григір Тютюнник — «Климко»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "7. **Олекса Стороженко — «Скарб»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "8. **Богдан Лепкий — «Мишка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "9. **Ліна Костенко — «Чайка на крижині», «Крила», «Кольорові миші»:** [📖 Крила](https://ukrlib.com.ua) | [📖 Миші](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "10. **Василь Симоненко — «Лебеді материнства», «Ти знаєш, що ти — людина»:** [📖 Лебеді](https://ukrlib.com.ua) | [📖 Ти знаєш...](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "11. **Любов Пономаренко — «Гер переможений»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
+    ),
+    "lit_world": (
+        "🗺️ **Зарубіжна література 7 клас (О. М. Ніколенко та ін., 2024 НУШ):**\n"
+        "• 📖 [Підручник онлайн (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n\n"
+        "🎭 **Художні твори та балади (Текст + Аудіокниги):**\n"
+        "1. **Билини про Іллю Муромця та короля Артура:** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "2. **Фрідріх Шиллер — «Рукавичка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "3. **Адам Міцкевич — «Світязь», «Альпухара»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "4. **Роберт Льюїс Стівенсон — «Вересовий трунок»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "5. **Вальтер Скотт — «Айвенго»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "6. **Артур Конан Дойл — «Пістрява стрічка», «Спілка рудих»:** [📖 Стрічка](https://ukrlib.com.ua) | [📖 Спілка](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "7. **Едгар Аллан По — «Золотий жук»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "8. **О. Генрі — «Останній листок», «Дари волхвів»:** [📖 Листок](https://ukrlib.com.ua) | [📖 Дари](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "9. **Герберт Уеллс — «Чарівна крамниця»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "10. **Рюноске Акутаґава — «Павутинка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "11. **Айзек Азімов — «Фах»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "12. **Діана Вінн Джонс — «Мандрівний замок Хаула»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
+    )
+}
+
 @router.message(F.text == "📚 Книги")
 async def handle_show_books(message: Message):
-    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS: return
-    await send_human_message(message, BOOKS_DATA)
+    if IS_TESTING_MODE and message.from_user.id not in SUPER_ADMIN_IDS and message.from_user.id not in ADMIN_L4_IDS and message.from_user.id not in TESTER_IDS:
+        return
+    await send_human_message(
+        message,
+        "📚 **Бібліотека 7-В класу (НУШ):**\n\nОбери предмет, щоб відкрити свій підручник (а для літератури — усі художні твори, вірші та аудіокниги):",
+        reply_markup=get_subjects_menu("book")
+    )
+
+@router.callback_query(F.data.startswith("book_"))
+async def process_book_subject(callback: CallbackQuery):
+    await callback.answer()
+    subj = callback.data.replace("book_", "")
+    content = BOOKS_CATALOG.get(subj, f"📚 Підручник для цього предмету ще додається.\n\n{BOOKS_DATA}")
+    await callback.message.edit_text(
+        text=content,
+        reply_markup=get_subjects_menu("book"),
+        parse_mode="Markdown",
+        disable_web_page_preview=True
+    )
+
 
 @router.message(F.text == "📌 Важливе")
 async def handle_show_important(message: Message):
