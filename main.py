@@ -37,11 +37,21 @@ TEACHER_CHAT_ID = 0
 USER_TELEGRAM_NAMES = {8791830931: "Макар"}
 
 # 🗄️ ОЛІМПІАДНА БАЗА ДАНИХ ID УЧНІВ (ЗВ'ЯЗОК ЮЗЕРНЕЙМ -> TELEGRAM ID)
-USER_USERNAMES = {
-    "@macar_dev_temp": 8791830931,
-    "@ezhik_lite": 441394079,   # ID Артема (ArtemYch)
-    "@ilona_x": 1122334455,
-    "@marri_chk": 9988776655
+USER_USERNAMES_TEXT = {
+    "@ilona_x": "Ілона",
+    "@selarkin": "Роман",
+    "@play.funtime.su": "Едуард",
+    "@marri_chk": "Марічка",
+    "@myveronichkam": "Вероніка",
+    "@Red_tea21": "Назарій",
+    "@Mi42a": "Мирослава",
+    "@sanichka_gg": "Олександр",
+    "@shadow123446": "Емілія",
+    "@ezhik_lite": "Артем",
+    "@Vladore1488": "Колодинський Богдан",
+    "@Sharik_xd": "Ковальчук Богдан",
+    "@victoria197198": "Бакланова Вікторія Олександрівна",
+    "Mishaela1": "Михайло",
 }
 
 CHAT_REGISTERED_USERS = {}  
