@@ -1017,6 +1017,43 @@ async def cron_birthday_congratulations():
                         
         await asyncio.sleep(25)
 
+@router.message(F.text.startswith("/test_bd"))
+async def test_birthday_command(message: Message):
+    if message.from_user.id != 8791830931:
+        return
+    
+    args = message.text.split(maxsplit=1)
+    person_name = args[1].strip() if len(args) > 1 else "Макар"
+    
+    users_map = globals().get("USER_USERNAMES", {})
+    names_map = globals().get("USER_USERNAMES_TEXT", {})
+    
+    target_id = 0
+    for username, u_name in names_map.items():
+        if u_name.lower() == person_name.lower() or person_name.lower() in u_name.lower():
+            target_id = users_map.get(username.lower(), 0)
+            break
+    if person_name.lower() == "макар":
+        target_id = 8791830931
+
+    if target_id > 0:
+        USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + 200
+        try:
+            await bot.send_message(
+                chat_id=target_id,
+                text=f"🎂🎉 **З ДНЕМ НАРОДЖЕННЯ, {person_name.upper()}!** 🎉🎂\n\n"
+                     f"Весь клас та адміністрація бота вітають тебе зі святом! Бажаємо легких контрольних, крутих оцінок, побільше вільного часу та топового настрою!\n\n"
+                     f"🎁 **Подарунок від бота:** +200 Сімок 🪙 вже зараховано на твій баланс!"
+            )
+            await message.answer(f"✅ Тестове привітання та +200 Сімок надіслано для **{person_name}** (ID: `{target_id}`)!")
+        except Exception:
+            await message.answer(f"⚠️ Не вдалося написати в ЛС для **{person_name}**.")
+    else:
+        await message.answer(f"⚠️ ID для **{person_name}** не знайдено в базі (учень ще не натискав `/start`), але ось як виглядатиме повідомлення в чаті:")
+    
+    chat_msg = f"🥳🎂 **Сьогодні святкує День народження: {person_name}!**\n\nНе забудьте привітати в чаті! Імениннику вже нараховано святковий бонус від бота! 🎉"
+    await message.answer(chat_msg)
+
 
 async def main():
     logging.basicConfig(level=logging.INFO)
