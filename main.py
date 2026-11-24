@@ -1018,13 +1018,17 @@ async def cron_birthday_congratulations():
 
 
 async def main():
-    logging.basicConfig(level=logging.INFO); dp.include_router(router)
-    asyncio.create_task(self_ping_task()); asyncio.create_task(cron_secret_agent_picker())
-        asyncio.create_task(cron_birthday_congratulations())
+    logging.basicConfig(level=logging.INFO)
+    dp.include_router(router)
+    asyncio.create_task(self_ping_task())
+    asyncio.create_task(cron_secret_agent_picker())
+    asyncio.create_task(cron_birthday_congratulations())
     restore_homework_from_file()
     try:
         await bot.delete_webhook(drop_pending_updates=True)
         await asyncio.gather(run_web_server(), dp.start_polling(bot))
-    finally: await bot.session.close()
+    finally:
+        await bot.session.close()
 
-if __name__ == "__main__": asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
