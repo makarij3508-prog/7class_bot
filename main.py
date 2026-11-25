@@ -13,9 +13,6 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.chat_action import ChatActionSender
 from aiohttp import web
 
-# ==========================================
-# 🚨 КРИТИЧНА КОНФІГУРАЦІЯ СИСТЕМИ v2.7 (7-В)
-# ==========================================
 
 BOT_TOKEN = "8735817305:AAEzAlm9A4H" + "HYu7AojGXV-FI2pB1GcXJS8k"
 SUPER_ADMIN_IDS = [8791830931]
@@ -273,97 +270,85 @@ async def process_schedule_callback(callback: CallbackQuery):
 
 BOOKS_CATALOG = {
     "algebra": (
-        "📐 **Алгебра 7 клас (О. С. Істер, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "📐 **Алгебра 7 клас (О. С. Істер, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "geometry": (
-        "📐 **Геометрія 7 клас (О. С. Істер, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "📐 **Геометрія 7 клас (О. С. Істер, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "physics": (
-        "🧲 **Фізика 7 клас (С. О. Довгий та ін., 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🧲 **Фізика 7 клас (С. О. Довгий та ін., 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "chemistry": (
-        "🧪 **Хімія 7 клас (О. Г. Ярошенко, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🧪 **Хімія 7 клас (О. Г. Ярошенко, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "biology": (
-        "🧬 **Біологія 7 клас (О. В. Тагліна та ін., 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🧬 **Біологія 7 клас (О. В. Тагліна та ін., 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "geography": (
-        "🌍 **Географія 7 клас (В. М. Бойко та ін., 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🌍 **Географія 7 клас (В. М. Бойко та ін., 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "hist_ua": (
-        "📜 **Історія України 7 клас (О. Є. Панарін, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "📜 **Історія України 7 клас (О. Є. Панарін, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "hist_world": (
-        "🏰 **Всесвітня історія 7 клас (О. І. Пометун та ін., 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🏰 **Всесвітня історія 7 клас (О. І. Пометун та ін., 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "lang_ua": (
-        "🇺🇦 **Українська мова 7 клас (А. В. Онатій, Т. П. Ткачук, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🇺🇦 **Українська мова 7 клас (А. В. Онатій, Т. П. Ткачук, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "english": (
-        "🇬🇧 **Англійська мова 7 клас (H. Q. Mitchell — Full Blast Plus 7, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF + Аудіо (Shkola.in.ua)](https://shkola.in.ua)"
+        "🇬🇧 **Англійська мова 7 клас (H. Q. Mitchell — Full Blast Plus 7, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF + Аудіо](https://pidruchnyk.com.ua)"
     ),
     "inf": (
-        "💻 **Інформатика 7 клас (Н. В. Морзе, О. В. Барна, 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "💻 **Інформатика 7 клас (Н. В. Морзе, О. В. Барна, 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "tech": (
-        "🛠️ **Технології 7 клас (І. Ю. Ходзицька та ін., 2024 НУШ):**\n\n"
-        "• 📖 [Читати онлайн / PDF (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n"
-        "• 📥 [Завантажити PDF (Shkola.in.ua)](https://shkola.in.ua)"
+        "🛠️ **Технології 7 клас (І. Ю. Ходзицька та ін., 2024 НУШ):**\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)"
     ),
     "lit_ua": (
         "📚 **Українська література 7 клас (О. В. Калинич, 2024 НУШ):**\n"
-        "• 📖 [Підручник онлайн (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)\n\n"
         "🎭 **Художні твори та вірші (Текст + Аудіокниги):**\n"
-        "1. **Пісні (суспільно-побутові, козацькі, чумацькі):** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "2. **Іван Франко — «Захар Беркут»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "3. **Тарас Шевченко — «Тополя», «Заповіт», «Мені тринадцятий минало...»:** [📖 Тополя](https://ukrlib.com.ua) | [📖 Заповіт](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "4. **Андрій Чайковський — «За сестрою»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "5. **Михайло Стельмах — «Гуси-лебеді летять»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "6. **Григір Тютюнник — «Климко»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "7. **Олекса Стороженко — «Скарб»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "8. **Богдан Лепкий — «Мишка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "9. **Ліна Костенко — «Чайка на крижині», «Крила», «Кольорові миші»:** [📖 Крила](https://ukrlib.com.ua) | [📖 Миші](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "10. **Василь Симоненко — «Лебеді материнства», «Ти знаєш, що ти — людина»:** [📖 Лебеді](https://ukrlib.com.ua) | [📖 Ти знаєш...](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "11. **Любов Пономаренко — «Гер переможений»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
+        "1. **Народні пісні:** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "2. **І. Франко — «Захар Беркут»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "3. **Т. Шевченко — «Тополя», «Заповіт»:** [📖 Тополя](https://ukrlib.com.ua) | [📖 Заповіт](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "4. **А. Чайковський — «За сестрою»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "5. **М. Стельмах — «Гуси-лебеді летять»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "6. **Г. Тютюнник — «Климко»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "7. **О. Стороженко — «Скарб»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "8. **Б. Лепкий — «Мишка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "9. **Л. Костенко — «Крила», «Кольорові миші»:** [📖 Крила](https://ukrlib.com.ua) | [📖 Миші](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "10. **В. Симоненко — «Лебеді материнства», «Ти знаєш, що ти — людина»:** [📖 Лебеді](https://ukrlib.com.ua) | [📖 Ти знаєш...](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "11. **Л. Пономаренко — «Гер переможений»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
     ),
     "lit_world": (
         "🗺️ **Зарубіжна література 7 клас (О. М. Ніколенко та ін., 2024 НУШ):**\n"
-        "• 📖 [Підручник онлайн (Pidruchnyk.com.ua)](https://pidruchnyk.com.ua)\n\n"
+        "• 📖 [Відкрити підручник онлайн / PDF](https://pidruchnyk.com.ua)\n\n"
         "🎭 **Художні твори та балади (Текст + Аудіокниги):**\n"
-        "1. **Билини про Іллю Муромця та короля Артура:** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "2. **Фрідріх Шиллер — «Рукавичка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "3. **Адам Міцкевич — «Світязь», «Альпухара»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "4. **Роберт Льюїс Стівенсон — «Вересовий трунок»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "5. **Вальтер Скотт — «Айвенго»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "6. **Артур Конан Дойл — «Пістрява стрічка», «Спілка рудих»:** [📖 Стрічка](https://ukrlib.com.ua) | [📖 Спілка](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "7. **Едгар Аллан По — «Золотий жук»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "1. **Билини та балади:** [📖 Тексти](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "2. **Ф. Шиллер — «Рукавичка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "3. **А. Міцкевич — «Світязь», «Альпухара»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "4. **Р. Л. Стівенсон — «Вересовий трунок»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "5. **В. Скотт — «Айвенго»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "6. **А. Конан Дойл — «Пістрява стрічка», «Спілка рудих»:** [📖 Стрічка](https://ukrlib.com.ua) | [📖 Спілка](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "7. **Е. А. По — «Золотий жук»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
         "8. **О. Генрі — «Останній листок», «Дари волхвів»:** [📖 Листок](https://ukrlib.com.ua) | [📖 Дари](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "9. **Герберт Уеллс — «Чарівна крамниця»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "10. **Рюноске Акутаґава — «Павутинка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "11. **Айзек Азімов — «Фах»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
-        "12. **Діана Вінн Джонс — «Мандрівний замок Хаула»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
+        "9. **Г. Уеллс — «Чарівна крамниця»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "10. **Р. Акутаґава — «Павутинка»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "11. **А. Азімов — «Фах»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)\n"
+        "12. **Д. В. Джонс — «Мандрівний замок Хаула»:** [📖 Текст](https://ukrlib.com.ua) | [🎧 Аудіо](https://youtube.com)"
     )
 }
 
@@ -479,8 +464,7 @@ async def process_open_shop(callback: CallbackQuery):
 async def process_buy_item(callback: CallbackQuery, state: FSMContext):
     user_id = callback.from_user.id
     item = callback.data.replace("buy_", "")
-    
-    # 🚨 ЖЕСТКИЙ ОЛІМПІАДНИЙ ФІКС ВІДСТУПІВ: Рівно 4 пробели від краю для кожної строчки!
+
     prices = {"shpora": 50, "antimut": 100, "customtag": 150, "detective": 200, "achievement_pack": 250}
     price = prices.get(item, 999)
     
@@ -491,7 +475,6 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         
     USER_BALANCES[user_id] -= price
     tax_amount = int(price * 0.3)
-       # 🚨 ЖЕСТКИЙ ОЛІМПІАДНИЙ ФІКС: Нараховуємо податок чітко на твій ID всередині словника!
     USER_BALANCES[8791830931] = USER_BALANCES.get(8791830931, 0) + tax_amount
     for l4_id in ADMIN_L4_IDS:
         if l4_id != 8791830931: 
@@ -509,13 +492,12 @@ async def process_buy_item(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(f"🏷️ **Купівля успішна!** Сплачено податок {tax_amount} 🪙.\nВведіть текст вашого кастомного тегу (до 15 символів):")
         await state.set_state(BotStates.waiting_for_custom_tag)
     elif item == "detective":
-        # 🕵️‍♂️ РОЗРАХУНОК ЦРУ-ПІДКАЗКИ ДЛЯ РОЗКРИТТЯ ТАЄМНОГО ШПИГУНА
         agent_name = "Макар"
         for username, u_name in USER_USERNAMES_TEXT.items():
             if USER_USERNAMES.get(username.lower(), 0) == CURRENT_SECRET_AGENT_ID:
                 agent_name = u_name; break
         
-        # Генеруємо базу розумних підказок
+
         first_letter = agent_name if agent_name else "М"
         half_index = len(RANDOM_NAMES) // 2
         is_in_first_half = agent_name in RANDOM_NAMES[:half_index] if agent_name in RANDOM_NAMES else True
@@ -564,7 +546,6 @@ async def process_live_chat_message(message: Message, state: FSMContext):
         
     sender_name = CHAT_REGISTERED_USERS.get(user_id, message.from_user.first_name if message.from_user.first_name else "Учень")
     
-    # ⚔️ СИСТЕМА ГЛАДІАТОРСЬКИХ ДУЕЛЕЙ НА СІМКИ ДЛЯ ВСЬОГО КЛАСУ v3.0
     if message.text.startswith("/duel"):
         args = message.text.split()
         if len(args) < 3:
@@ -596,11 +577,10 @@ async def process_live_chat_message(message: Message, state: FSMContext):
             await message.answer("🧠 Ти не можеш викликати на дуель самого себе!")
             return
             
-        # Бронюємо Сімки у ініціатора дуелі (якщо це не Макар з нескінченним читом)
         if user_id != 8791830931:
             USER_BALANCES[user_id] -= duel_amount
             
-        # Записуємо дані дуелі у глобальну пам'ять для інлайн-кнопки супротивника
+
         if "active_duels" not in globals(): global active_duels; active_duels = {}
         active_duels[target_id] = {"challenger_id": user_id, "challenger_name": sender_name, "bet": duel_amount}
         
@@ -608,7 +588,7 @@ async def process_live_chat_message(message: Message, state: FSMContext):
             [InlineKeyboardButton(text=f"⚔️ Прийняти виклик на {duel_amount} Сімок", callback_data=f"acceptduel_{target_id}")]
         ])
         
-        # Рассылаем вызов всем участникам активного чата класса
+
         for t_id in list(CHAT_REGISTERED_USERS.keys()):
             try:
                 await bot.send_message(
@@ -619,7 +599,6 @@ async def process_live_chat_message(message: Message, state: FSMContext):
             except Exception: pass
         return
 
-    # Звичайні повідомлення чату (Старий робочий код з префіксами та чатлогами)
     custom_tag = USER_CUSTOM_TAGS.get(user_id, "")
     prefix_text = f"[{custom_tag}] " if custom_tag else ""
     for target_id in list(CHAT_REGISTERED_USERS.keys()):
@@ -1047,34 +1026,33 @@ async def process_accept_gladiator_duel(callback: CallbackQuery):
     target_balance = USER_BALANCES.get(target_id, 0)
     if target_id != 8791830931 and target_balance < bet:
         await callback.answer("❌ У тебе недостатньо Сімок, щоб прийняти цю дуель!", show_alert=True)
-        # Повертаємо Сімки ініціатору виклику
         if challenger_id != 8791830931: USER_BALANCES[challenger_id] += bet
         return
         
     await callback.answer()
     
-    # Списуємо ставку у того, хто прийняв виклик
+
     if target_id != 8791830931:
         USER_BALANCES[target_id] -= bet
         
     target_name = CHAT_REGISTERED_USERS.get(target_id, callback.from_user.first_name)
     
-    # 🎲 КИДАЄМО КУБИКИ РАНДОМУ ДЛЯ ОБОХ ГЛАДІАТОРІВ!
+
     roll_1 = random.randint(1, 6)
     roll_2 = random.randint(1, 6)
     
-    while roll_1 == roll_2:  # Виключаємо нічию, крутимо до перемоги!
+    while roll_1 == roll_2:  
         roll_2 = random.randint(1, 6)
         
     win_pool = bet * 2
     
     if roll_1 > roll_2:
-        # Переміг Ініціатор виклику (Challenger)
+ 
         USER_BALANCES[challenger_id] = USER_BALANCES.get(challenger_id, 0) + win_pool
         winner_name = challenger_name
         loser_name = target_name
     else:
-        # Переміг Той, хто прийняв виклик (Target)
+
         USER_BALANCES[target_id] = USER_BALANCES.get(target_id, 0) + win_pool
         winner_name = target_name
         loser_name = challenger_name
