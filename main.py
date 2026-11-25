@@ -227,8 +227,10 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🏆 Досягнення", callback_data="profile_achievements"), InlineKeyboardButton(text="🔮 Передбачення", callback_data="profile_prediction")],
     [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
     [InlineKeyboardButton(text="👑 Топ Шейхів класу", callback_data="economy_top_sheikhs")],
-    [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")]
+    [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")],
+    [InlineKeyboardButton(text="ℹ️ Про проєкт (Для журі)", callback_data="profile_about")]
 ])
+
 
 
 @router.message(Command("start"))
@@ -434,6 +436,29 @@ async def process_changelog(callback: CallbackQuery):
     await callback.message.edit_text(
         text="📜 **Офіційні оновлення системи (Версія v2.7 Wall Street & CIA):**\n\n• 💳 **Банківська система переказів /pay:** Запущено повноцінні грошові перекази між учнями класу з текстовими чеками («на булочку» 🍔, «для любимої» 💌).\n• 💸 **Казначейство та Податкова Система:** Введено автоматичний налог 30% з усіх покупок у Магазині луту. Податок моментально нараховується на баланси Макара та Головних Adminів класу 🪙.\n• 🕵️‍♂️ **ЦРУ-Премодерація Досягнень:** Медалі тепер можна купувати самостійно за 250 Сімок! Текст спочатку летить Макару на узгодження.\n• 🤫 **Особистий Секретний Злив Макара:** Роль Шпигуна повністю автоматизована і раз на добу видається випадковому ученю з бази, а Макар отримує прихований ЦРУ-чек звіт.\n• 👑 **Фікс Адмінок та Уровнів на ходу:** Повністю виправлено логіку синхронізації Telegram ID.\n• 🧹 **Економічна зачистка:** З метою стабілізації валюти 7-В класу, з коду повністю видалені інструменти зливу балансу (Казино та Біржа акцій).", reply_markup=settings_interactive_menu
     )
+
+@router.callback_query(F.data == "profile_about")
+async def process_about_project(callback: CallbackQuery):
+    await callback.answer()
+    about_text = (
+        "ℹ️ **Про проєкт: Шкільний Екосистемний Бот 7-В класу**\n\n"
+        "🎯 **Мета проєкту:**\n"
+        "Автоматизація навчального процесу, облік відвідуваності, швидкий доступ до підручників та гейміфікація шкільного життя.\n\n"
+        "⚙️ **Технічний стек та архітектура:**\n"
+        "• **Мова та фреймворк:** Python 3, асинхронна бібліотека `aiogram 3.x`\n"
+        "• **Машина станів (FSM):** Багаторівневі сценарії введення даних (`StatesGroup`)\n"
+        "• **Асинхронність та фонові процеси:** `asyncio` (таймер привітань на 08:30 за `ZoneInfo('Europe/Kiev')`, автопінг сервера)\n"
+        "• **Веб-сервер та хостинг:** Вбудований `aiohttp` health-check сервер, деплой на Render\n"
+        "• **Безпека та права (RBAC):** 5-рівнева рольова модель доступу (від Учня до Головного Адміністратора) з логуванням та премодерацією\n"
+        "• **Інтеграції:** REST API нейромережі для допомоги з навчанням, локальне збереження станів у JSON\n\n"
+        "👨‍💻 **Автор та розробник:** Макар (учень 7-В класу)"
+    )
+    await callback.message.edit_text(
+        text=about_text,
+        reply_markup=settings_interactive_menu,
+        parse_mode="Markdown"
+    )
+
 
 @router.callback_query(F.data == "economy_get_gift")
 async def process_get_daily_gift(callback: CallbackQuery):
