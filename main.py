@@ -59,7 +59,10 @@ MUTED_USERS = {}
 USER_BALANCES = {}          
 USER_LAST_CASE = {}         
 USER_CUSTOM_TAGS = {}       
-USER_ITEMS = {}             
+USER_ITEMS = {}
+USER_LAST_PREDICTION = {}
+USER_TODAY_PREDICTION = {}
+
 
 CURRENT_SECRET_AGENT_ID = 0   
 AGENT_HAS_SENT_SECRET = False  
@@ -419,8 +422,27 @@ async def show_settings(message: Message):
 
 @router.callback_query(F.data == "profile_prediction")
 async def process_prediction(callback: CallbackQuery):
-    await callback.message.answer(f"🔮 **Твоє передбачення:**\n\n{random.choice(PREDICTIONS)}")
+    from zoneinfo import ZoneInfo
+    user_id = callback.from_user.id
+    today_str = datetime.now(ZoneInfo("Europe/Kiev")).strftime("%d.%m.%Y")
+    
+    if USER_LAST_PREDICTION.get(user_id) == today_str and user_id in USER_TODAY_PREDICTION:
+        saved_pred = USER_TODAY_PREDICTION[user_id]
+        await callback.message.answer(
+            f"🔮 **Ти вже витягнув своє передбачення на сьогодні!**\n\n"
+            f"Твоє пророцтво дня:\n«_{saved_pred}_»\n\n"
+            f"⏳ _Нове передбачення стане доступним завтра після 00:00!_"
+        )
+        await callback.answer()
+        return
+        
+    new_pred = random.choice(PREDICTIONS)
+    USER_LAST_PREDICTION[user_id] = today_str
+    USER_TODAY_PREDICTION[user_id] = new_pred
+    
+    await callback.message.answer(f"🔮 **Твоє передбачення на сьогодні:**\n\n{new_pred}")
     await callback.answer()
+
 
 @router.callback_query(F.data == "profile_achievements")
 async def process_achievements(callback: CallbackQuery):
