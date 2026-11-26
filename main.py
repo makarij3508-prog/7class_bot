@@ -231,7 +231,7 @@ settings_interactive_menu = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="🎁 Щоденний Подарунок", callback_data="economy_get_gift"), InlineKeyboardButton(text="🛒 Магазин Сімок", callback_data="economy_open_shop")],
     [InlineKeyboardButton(text="👑 Топ Шейхів класу", callback_data="economy_top_sheikhs")],
     [InlineKeyboardButton(text="🔔 Дзвінки", callback_data="profile_bells"), InlineKeyboardButton(text="📜 Лог оновлень", callback_data="profile_changelog")],
-    [InlineKeyboardButton(text="ℹ️ Про проєкт (Для журі)", callback_data="profile_about")]
+    [InlineKeyboardButton(text="ℹ️ Про проєкт", callback_data="profile_about")]
 ])
 
 
